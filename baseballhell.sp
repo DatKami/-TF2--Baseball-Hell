@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.1.0"
+#define PLUGIN_VERSION  "1.58.2.1"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -202,7 +202,7 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 		readyArray[client] = false;
 		SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1);
 	}
-	if (!StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
+	if (!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
 	{
 		if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) 
 		{
