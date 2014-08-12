@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.57.1.1"
+#define PLUGIN_VERSION  "1.58.1.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -48,7 +48,6 @@ static const Float:ballDelay = Float:0.25;
 new String:baseBallString[100];
 new String:cleaverString[100];
 new String:lochString[200];
-//new String:delayStringMultiplier[5];
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 
@@ -122,7 +121,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		if (intEnabled == int:1)
 		{
 			ServerCommand("mp_disable_respawn_times 1");
-			OnAllPluginsLoaded();
 			TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 			ScoutCheck();
 			//set all health to 40
@@ -204,9 +202,12 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 		readyArray[client] = false;
 		SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1);
 	}
-	if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) 
+	if (!StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
 	{
-		SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
+		if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) 
+		{
+			SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
+		}
 	}
 }
 
@@ -218,7 +219,7 @@ public Action:timerRegen(Handle:timer)
 
 public OnAllPluginsLoaded() 
 {
-	//initially make some weapons
+	//make some weapons
 	CreateWeapons();
 	
 	//this plugin needs scout multijump
@@ -241,11 +242,11 @@ public OnAllPluginsLoaded()
 //create the cleaver and an array of a bats with different health decreases
 public CreateWeapons()
 {
-	lochString = "408 ; 1 ; 127 ; 2 ; 103 ; 2.45 ; 370 ; 68 ; 97 ; 0 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 6 ; ";
+	lochString = "408 ; 1 ; 127 ; 2 ; 103 ; 2.45 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 	
 	//concatenate the fire delay multiplier onto the attributes of the loch-n-load
 	lochFloatSpeed = FloatMul(delayFloatMultiplier, lochFloatMultiplier) ;
-	lochFloatSpeed = FloatSub(lochFloatSpeed, 0.05) ; //workaround for reload at faster speeds
+	lochFloatSpeed = FloatSub(lochFloatSpeed, lochFloatMultiplier / Float:2.0 ) ; //compensate for reload animation
 	FloatToString(lochFloatSpeed, lochStringSpeedMultiplier, 5);
 	StrCat(lochString, 200, lochStringSpeedMultiplier);
 
@@ -254,19 +255,18 @@ public CreateWeapons()
 	//concatenate the fire delay multiplier onto the attributes of the cleaver
 	cleaverFloatSpeed = FloatMul(delayFloatMultiplier, cleaverFloatMultiplier) ;
 	FloatToString(cleaverFloatSpeed, cleaverStringSpeedMultiplier, 5);
-	cleaverString = "408 ; 1 ; 370 ; 56 ; 6 ; ";
+	cleaverString = "408 ; 1 ; 370 ; 56 ; 178 ; 0.1 ; 6 ; ";
 	StrCat(cleaverString, 100, cleaverStringSpeedMultiplier);
 	TF2Items_CreateWeapon( CLEAVER_ID, "tf_weapon_cleaver", 812, 1, 9, 10, cleaverString, -1, _, true ); 
 	
 	//for each class
 	for (new int:class = int:0 ; class < int:9 ; class++)
 	{
-		baseBallString = "38 ; 1 ; 370 ; 43";
-		
-		//concatenate the fire delay multiplier onto the attributes of the bat, for cosmetic effect
-		//StrCat(baseBallString, 100, " ; 5 ; ");
-		//FloatToString(delayFloatMultiplier, delayStringMultiplier, 5);
-		//StrCat(baseBallString, 100, delayStringMultiplier);
+		if ((class != int:0) && (!StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)))
+		{
+			break; //only create the scout bat if scouts only mode
+		}
+		baseBallString = "38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
 		
 		//concatenate the health reduction
 		StrCat(baseBallString, 100, " ; 125 ; ");
@@ -347,13 +347,8 @@ public ScoutCheck()
 					TF2_SetPlayerClass(i, TFClass_Scout, false, true);
 				}
 			}
-			ServerCommand("sm_smj_global_limit 0");
 		}
-		else
-		{	//reset the scout by normalizing double jump
-			ServerCommand("sm_smj_global_limit 1");
-		}
-		CreateWeapons();
+		OnAllPluginsLoaded();
 		IssueNewWeapons();
 	}
 }
@@ -405,18 +400,20 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
 	{
 		ServerCommand("mp_disable_respawn_times 1");
+		ScoutCheck();
+		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 	}
 }
 
 public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
 {
-
-	new iClient = GetClientOfUserId( GetEventInt( hEvent, "userid" ) );
-	if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) /*|| !IsPlayerAlive(iClient)*/ )
-	return;
 	
 	if (intEnabled == int:1) //these need to be fired constantly in case of new people
 	{
+		new iClient = GetClientOfUserId( GetEventInt( hEvent, "userid" ) );
+		if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) /*|| !IsPlayerAlive(iClient)*/ )
+		return;
+	
 		//if scout only game mode set everyone to scout
 		if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", String:gameMode, false) || StrEqual("SCOUT_PLAY_BAT_ONLY", String:gameMode, false))
 		{
