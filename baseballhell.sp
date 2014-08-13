@@ -21,7 +21,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.3.0"
+#define PLUGIN_VERSION  "1.60.4.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -436,7 +436,7 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 	new ent = FindEntityByClassname(-1, "func_tracktrain");
 	if (ent != -1)
 	{
-		DispatchKeyValue(ent, "MaxSpeed", "400");
+		DispatchKeyValueFloat(ent, "MaxSpeed", 400.0);
 	}
 
 }
