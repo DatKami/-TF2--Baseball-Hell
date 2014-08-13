@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.11.0"
+#define PLUGIN_VERSION  "1.58.12.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -199,8 +199,6 @@ public Action:timerRegen(Handle:timer)
 		{
 			if(IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
 			{ SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1); }
-			CloseHandle(timerArray[i]);
-			timerArray[i] = INVALID_HANDLE; 
 		}
 	}
 }
@@ -208,19 +206,12 @@ public Action:timerRegen(Handle:timer)
 public ResetAllTimers()
 {
 	for(new i = 1; i <= MAXPLAYERS; i++) 
-	{ 
-		if (IsValidClient(i)) 
-		{ 
-			ResetTimer(int:i); 
-		} 
-	}
+	{ if (IsValidClient(i)) { ResetTimer(int:i); } }
 }
 
 public ResetTimer(int:client)
 {
-	if (timerArray[client] != INVALID_HANDLE) { CloseHandle(timerArray[client]); }
-	timerArray[client] = INVALID_HANDLE;
-	timerArray[client] = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
+	timerArray[client] = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_FLAG_NO_MAPCHANGE & TIMER_DATA_HNDL_CLOSE);
 }
 
 
