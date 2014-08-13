@@ -21,7 +21,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.7.0"
+#define PLUGIN_VERSION  "1.60.8.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -447,7 +447,16 @@ public SetCartSpeed()
 		else { announceString = "Hook was unsuccessful!"; }
 		AnnounceAll();
 		*/
+		/*
 		SetEntPropFloat(ent, Prop_Send, "m_maxSpeed", 400.0);
+		*/
+		SetVariantFloat(400.0);
+		/*
+		if (AcceptEntityInput(ent, "m_maxSpeed"))
+		{ announceString = "Hook was successful!"; }
+		else { announceString = "Hook was unsuccessful!"; }
+		AnnounceAll();
+		*/
 	}
 }
 
