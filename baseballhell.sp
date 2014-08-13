@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.8.0"
+#define PLUGIN_VERSION  "1.58.9.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -206,7 +206,7 @@ public Action:timerRegen(Handle:timer)
 
 public ResetTimer()
 {
-		CloseHandle(TimerHandle);
+		if (TimerHandle != INVALID_HANDLE) { CloseHandle(TimerHandle); }
 		TimerHandle = INVALID_HANDLE;
 		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 }
