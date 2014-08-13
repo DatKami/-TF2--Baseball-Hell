@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.5.0"
+#define PLUGIN_VERSION  "1.58.6.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -48,6 +48,7 @@ static const Float:ballDelay = Float:0.25;
 new String:baseBallString[100];
 new String:cleaverString[100];
 new String:lochString[200];
+new String:announceString[100];
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 
@@ -308,29 +309,43 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 		CloseHandle(TimerHandle);
 		TimerHandle = INVALID_HANDLE;
 		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
-		new String:damn[10];
-		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 10);
-		for(new i = 1; i <= MAXPLAYERS; i++)
-		{
-			if (IsValidClient(i))
-			{
-				PrintHintText( i, damn);
-			}
-		}
+		announceString = "Fire rate set to ";
+		new String:damn[5];
+		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+		StrCat(announceString, 100, damn);
+		StrCat(announceString, 100, " seconds");
+		AnnounceAll();
 		CreateWeapons();
 		IssueNewWeapons();
 	}
 }
 
+public AnnounceAll()
+{
+	for(new i = 1; i <= MAXPLAYERS; i++)
+	{
+		if (IsValidClient(i))
+		{
+			PrintHintText( i, announceString);
+		}
+	}
+}
+
 public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (!StrEqual(oldVal,newVal))
-	{
-		//set a new game mode
-		GetConVarString(cvar, gameMode, 100);
-		
-		ScoutCheck();
-	}
+	//set a new game mode
+	GetConVarString(cvar, gameMode, 100);
+	announceString = "Baseball Hell mode set to ";
+	new String:daMode[30];
+
+	if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "Scouts only, with all weapons"; }
+	else if (StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)){ daMode = "Scouts with bat only"; }
+	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "All classes with all weapons"; }
+	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "All classes, with bat only"; }
+	else { daMode = "who knows what!"; }
+	StrCat(announceString, 100, daMode);
+	AnnounceAll();
+	ScoutCheck();
 }
 
 public ScoutCheck()
