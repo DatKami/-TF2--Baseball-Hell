@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.10.0"
+#define PLUGIN_VERSION  "1.58.11.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -195,10 +195,10 @@ public Action:timerRegen(Handle:timer)
 {
 	for(new i = 1; i <= MAXPLAYERS; i++)
 	{
-		if((timerArray[i] == timer) && IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
-		{ SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1); }
 		if ((timerArray[i] == timer)) 
 		{
+			if(IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
+			{ SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1); }
 			CloseHandle(timerArray[i]);
 			timerArray[i] = INVALID_HANDLE; 
 		}
