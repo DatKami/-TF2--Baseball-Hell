@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.59.3.0"
+#define PLUGIN_VERSION  "1.59.4.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -211,8 +211,8 @@ public ResetTimer(int:client)
 	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
 		cooldownArray[client] = true;
-		//offset by .04 seconds for timer compensation
-		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.04 , Timer:timerRegen, client);
+		//offset by .14 seconds for timer compensation
+		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.14 , Timer:timerRegen, client);
 	}
 }
 
