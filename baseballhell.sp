@@ -21,7 +21,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.5.0"
+#define PLUGIN_VERSION  "1.60.6.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -442,7 +442,7 @@ public SetCartSpeed()
 	new ent = FindEntityByClassname(-1, "func_tracktrain");
 	if (ent != -1)
 	{
-		if (DispatchKeyValueFloat(ent, "Max Speed", 400.0))
+		if (DispatchKeyValueFloat(ent, "max speed", 400.0))
 		{ announceString = "Hook was successful!"; }
 		else { announceString = "Hook was unsuccessful!"; }
 		AnnounceAll();
