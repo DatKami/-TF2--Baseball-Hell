@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.6.0"
+#define PLUGIN_VERSION  "1.58.7.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -57,9 +57,6 @@ static Float:cleaverFloatSpeed = Float:0.25;
 
 //this is the final loch speed multiplier 
 static Float:lochFloatSpeed = Float:0.25;
-
-//the delay cooldown array
-new bool:readyArray[MAXPLAYERS + 1];
 
 //gamemode handler
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
@@ -186,33 +183,25 @@ stock GetSpeshulAmmo(client, wepslot)
 	return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
 }
 
-//when fired, the ball counter is reset for everyone
-public resetArrays()
-{
-	for(new i = 1; i <= MAXPLAYERS; i++)
-	{
-		readyArray[i] = true;
-	}
-}
-
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1) && readyArray[client] && (GetGameTime() >= GetEntPropFloat(client, Prop_Send, "m_flNextAttack"))) 
-	{
-		readyArray[client] = false;
-		SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1);
-	}
 	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
 	{
 		SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
 	}
 }
 
-//reset the cooldown array when fired
+//reset ammo when fired
 public Action:timerRegen(Handle:timer)
 {
-	resetArrays();
+	for(new i = 1; i <= MAXPLAYERS; i++)
+	{
+		if (IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
+		{
+			SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1);
+		}
+	}
 }
 
 public OnAllPluginsLoaded() 
@@ -281,21 +270,6 @@ public CreateWeapons()
 			StrCat(baseBallString, 100, " ; 49 ; 1"); //no double jumps on all player modes
 		}
 		TF2Items_CreateWeapon( (BASEBALL_ID + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
-	}
-
-}
-
-//crits should always be enabled while the game modifier is active
-public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
-{
-	if (intEnabled == int:1)
-	{
-		result = true; //100% crits
-		return Plugin_Handled;
-	}
-	else
-	{
-		return Plugin_Continue;
 	}
 }
 
@@ -429,7 +403,7 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) /*|| !IsPlayerAlive(iClient)*/ )
 		return;
 	
-		//if scout only game mode set everyone to scout
+		//if scout only game mode set this person to scout
 		if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", String:gameMode, false) || StrEqual("SCOUT_PLAY_BAT_ONLY", String:gameMode, false))
 		{
 			TF2_SetPlayerClass(iClient, TFClass_Scout, false, true);
@@ -447,6 +421,20 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		//disable sentry targeting on this person
 		new flags = GetEntityFlags(iClient)|FL_NOTARGET;
 		SetEntityFlags(iClient, flags);
+	}
+}
+
+//crits should always be enabled while the game modifier is active
+public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
+{
+	if (intEnabled == int:1)
+	{
+		result = true; //100% crits
+		return Plugin_Handled;
+	}
+	else
+	{
+		return Plugin_Continue;
 	}
 }
 
