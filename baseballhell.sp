@@ -211,7 +211,11 @@ public ResetTimer(int:client)
 	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
 		cooldownArray[client] = true;
+<<<<<<< HEAD
 		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.01 , Timer:timerRegen, client);
+=======
+		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float: 0.01 , Timer:timerRegen, client);
+>>>>>>> origin/developmental
 	}
 }
 
