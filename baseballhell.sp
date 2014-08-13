@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.7.0"
+#define PLUGIN_VERSION  "1.58.8.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -119,7 +119,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		if (intEnabled == int:1)
 		{
 			ServerCommand("mp_disable_respawn_times 1");
-			TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
+			ResetTimer();
 			ScoutCheck();
 			//set all health to 40
 			for(new i = 1; i <= MAXPLAYERS; i++)
@@ -204,6 +204,14 @@ public Action:timerRegen(Handle:timer)
 	}
 }
 
+public ResetTimer()
+{
+		CloseHandle(TimerHandle);
+		TimerHandle = INVALID_HANDLE;
+		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
+}
+
+
 public OnAllPluginsLoaded() 
 {
 	//make some weapons
@@ -280,9 +288,7 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 	//every time this is set destroy the old timer and make a new timer, then issue cleavers with updated rates
 	if (intEnabled == int:1)
 	{
-		CloseHandle(TimerHandle);
-		TimerHandle = INVALID_HANDLE;
-		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
+		ResetTimer();
 		announceString = "Fire rate set to ";
 		new String:damn[5];
 		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
@@ -390,7 +396,7 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 	{
 		ServerCommand("mp_disable_respawn_times 1");
 		ScoutCheck();
-		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
+		ResetTimer();
 	}
 }
 
