@@ -3,6 +3,7 @@
 #include <tf2_stocks>
 #include <sdkhooks>
 #include <sourcemod>
+#include <sdktools>
 
 #define REQUIRE_EXTENSIONS
 #define AUTOLOAD_EXTENSIONS
@@ -20,7 +21,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.2.0"
+#define PLUGIN_VERSION  "1.60.3.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -393,15 +394,6 @@ public GiveArray(client)
 	}
 }
 
-public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
-{
-	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
-	{
-		ServerCommand("mp_disable_respawn_times 1");
-		ScoutCheck();
-	}
-}
-
 public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
 {
 	
@@ -430,6 +422,23 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		new flags = GetEntityFlags(iClient)|FL_NOTARGET;
 		SetEntityFlags(iClient, flags);
 	}
+}
+
+public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
+{
+	//first map round
+	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
+	{
+		ServerCommand("mp_disable_respawn_times 1");
+		ScoutCheck();
+	}
+	//find a cart and mod it
+	new ent = FindEntityByClassname(-1, "func_tracktrain");
+	if (ent != -1)
+	{
+		DispatchKeyValue(ent, "MaxSpeed", "400");
+	}
+
 }
 
 //crits should always be enabled while the game modifier is active
