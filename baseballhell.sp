@@ -195,17 +195,9 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 //reset ammo when fired
 public Action:timerRegen(Handle:timer, any:data)
 {
-<<<<<<< HEAD
 	if(cooldownArray[int:data]) { cooldownArray[int:data] = false; }
 	if(IsValidClient(int:data) && (GetSpeshulAmmo(int:data, TFWeaponSlot_Melee) < 1)) { SetSpeshulAmmo(int:data, TFWeaponSlot_Melee, 1); }
 	timerArray[int:data] = INVALID_HANDLE;
-=======
-	if (GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1 && readyArray[client]) 
-	{
-		cooldownArray[client] = true;
-		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.01 , Timer:timerRegen, client);
-	}
->>>>>>> origin/master
 }
 
 public ResetAllTimers()
