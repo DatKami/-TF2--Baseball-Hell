@@ -20,14 +20,13 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.2.1"
+#define PLUGIN_VERSION  "1.59.1.1"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
  
 static const int:BASEBALL_ID = int:9200; 
-new Handle:TimerHandle = INVALID_HANDLE; 
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
@@ -48,6 +47,7 @@ static const Float:ballDelay = Float:0.25;
 new String:baseBallString[100];
 new String:cleaverString[100];
 new String:lochString[200];
+new String:announceString[100];
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 
@@ -57,14 +57,15 @@ static Float:cleaverFloatSpeed = Float:0.25;
 //this is the final loch speed multiplier 
 static Float:lochFloatSpeed = Float:0.25;
 
-//the delay cooldown array
-new bool:readyArray[MAXPLAYERS + 1];
-
 //gamemode handler
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
 
 //enabled handler
-new int:intEnabled = int:0; 
+static int:intEnabled = int:0; 
+
+static Handle:timerArray[MAXPLAYERS + 1];
+
+static bool:cooldownArray[MAXPLAYERS + 1];
 
 static const int:startingHealth = int:40;
 
@@ -106,9 +107,10 @@ public OnPluginStart()
 	HookEvent( "post_inventory_application", OnPostInventoryApplicationAndPlayerSpawn );
 	HookEvent( "player_spawn", OnPostInventoryApplicationAndPlayerSpawn );
 	
-	//hook for respawn timer
+	//hook for disabling respawn timer
 	HookEvent( "teamplay_round_start", OnMapChange );
-	//TimerHandle = CreateTimer(FloatMul(ballDelay, delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
+	
+	//watch for sentries
 	AddCommandListener(CommandListener_Build, "build");
 }
 
@@ -121,7 +123,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		if (intEnabled == int:1)
 		{
 			ServerCommand("mp_disable_respawn_times 1");
-			TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 			ScoutCheck();
 			//set all health to 40
 			for(new i = 1; i <= MAXPLAYERS; i++)
@@ -140,8 +141,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 			ServerCommand("sm_smj_global_enabled 0");
 			ServerCommand("sm_smj_global_limit 1");
 			ServerCommand("mp_disable_respawn_times 0");
-			CloseHandle(TimerHandle);
-			TimerHandle = INVALID_HANDLE;
 			ServerCommand("sm_resetspeed @all");
 			for(new i = 1; i <= MAXPLAYERS; i++)
 			{
@@ -185,37 +184,37 @@ stock GetSpeshulAmmo(client, wepslot)
 	return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
 }
 
-//when fired, the ball counter is reset for everyone
-public resetArrays()
-{
-	for(new i = 1; i <= MAXPLAYERS; i++)
-	{
-		readyArray[i] = true;
-	}
-}
-
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if (GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1 && readyArray[client]) 
+	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0)) { ResetTimer(int:client); }
+	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
+	{ SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1); }
+}
+
+//reset ammo when fired
+public Action:timerRegen(Handle:timer, any:data)
+{
+	if(cooldownArray[int:data]) { cooldownArray[int:data] = false; }
+	if(IsValidClient(int:data) && (GetSpeshulAmmo(int:data, TFWeaponSlot_Melee) < 1)) { SetSpeshulAmmo(int:data, TFWeaponSlot_Melee, 1); }
+	timerArray[int:data] = INVALID_HANDLE;
+}
+
+public ResetAllTimers()
+{
+	for(new i = 1; i <= MAXPLAYERS; i++) 
+	{ if (IsValidClient(i)) { ResetTimer(int:i); } }
+}
+
+public ResetTimer(int:client)
+{
+	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
-		readyArray[client] = false;
-		SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1);
-	}
-	if (!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
-	{
-		if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) 
-		{
-			SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
-		}
+		cooldownArray[client] = true;
+		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.01 , Timer:timerRegen, client);
 	}
 }
 
-//reset the cooldown array when fired
-public Action:timerRegen(Handle:timer)
-{
-	resetArrays();
-}
 
 public OnAllPluginsLoaded() 
 {
@@ -284,69 +283,63 @@ public CreateWeapons()
 		}
 		TF2Items_CreateWeapon( (BASEBALL_ID + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
 	}
-
-}
-
-//crits should always be enabled while the game modifier is active
-public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
-{
-	if (intEnabled == int:1)
-	{
-		result = true; //100% crits
-		return Plugin_Handled;
-	}
-	else
-	{
-		return Plugin_Continue;
-	}
 }
 
 //handles a timer for baseball regeneration (isn't accurate, but is stable)
 public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (!StrEqual(oldVal, newVal))
+	delayFloatMultiplier = Float:StringToFloat(newVal);
+
+	if (intEnabled == int:1)
 	{
-		//every time this is set destroy the old timer and make a new timer, then issue cleavers with updated rates
-		if (intEnabled == int:1)
+		announceString = "Fire rate set to ";
+		new String:damn[5];
+		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+		StrCat(announceString, 100, damn);
+		StrCat(announceString, 100, " seconds");
+		AnnounceAll();
+		CreateWeapons();
+		IssueNewWeapons();
+	}
+}
+
+public AnnounceAll()
+{
+	for(new i = 1; i <= MAXPLAYERS; i++)
+	{
+		if (IsValidClient(i))
 		{
-			CloseHandle(TimerHandle);
-			TimerHandle = INVALID_HANDLE;
-		}
-		delayFloatMultiplier = Float:StringToFloat(newVal);
-		if (intEnabled == int:1)
-		{
-			TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
-			CreateWeapons();
-			IssueNewWeapons();
+			PrintHintText( i, announceString);
 		}
 	}
 }
 
 public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (!StrEqual(oldVal,newVal))
-	{
-		//set a new game mode
-		GetConVarString(cvar, gameMode, 100);
-		
-		ScoutCheck();
-	}
+	//set a new game mode
+	GetConVarString(cvar, gameMode, 100);
+	announceString = "Baseball Hell mode set to ";
+	new String:daMode[30];
+
+	if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "Scouts only, with all weapons"; }
+	else if (StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)){ daMode = "Scouts with bat only"; }
+	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "All classes with all weapons"; }
+	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "All classes, with bat only"; }
+	else { daMode = "who knows what!"; }
+	StrCat(announceString, 100, daMode);
+	AnnounceAll();
+	ScoutCheck();
 }
 
 public ScoutCheck()
 {
 	if (intEnabled == int:1)
 	{
-		//scout only: infinite jumps and everyone's class is scout
+		//scout only
 		if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false) || StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
 		{
 			for(new i = 1; i <= MAXPLAYERS; i++)
-			{
-				if (IsValidClient(i))
-				{
-					TF2_SetPlayerClass(i, TFClass_Scout, false, true);
-				}
-			}
+			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Scout, false, true); } }
 		}
 		OnAllPluginsLoaded();
 		IssueNewWeapons();
@@ -401,7 +394,6 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 	{
 		ServerCommand("mp_disable_respawn_times 1");
 		ScoutCheck();
-		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 	}
 }
 
@@ -414,7 +406,7 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) /*|| !IsPlayerAlive(iClient)*/ )
 		return;
 	
-		//if scout only game mode set everyone to scout
+		//if scout only game mode set this person to scout
 		if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", String:gameMode, false) || StrEqual("SCOUT_PLAY_BAT_ONLY", String:gameMode, false))
 		{
 			TF2_SetPlayerClass(iClient, TFClass_Scout, false, true);
@@ -432,6 +424,20 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		//disable sentry targeting on this person
 		new flags = GetEntityFlags(iClient)|FL_NOTARGET;
 		SetEntityFlags(iClient, flags);
+	}
+}
+
+//crits should always be enabled while the game modifier is active
+public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
+{
+	if (intEnabled == int:1)
+	{
+		result = true; //100% crits
+		return Plugin_Handled;
+	}
+	else
+	{
+		return Plugin_Continue;
 	}
 }
 
