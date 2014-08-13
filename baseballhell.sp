@@ -20,14 +20,13 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.9.0"
+#define PLUGIN_VERSION  "1.58.10.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
  
 static const int:BASEBALL_ID = int:9200; 
-new Handle:TimerHandle = INVALID_HANDLE; 
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
@@ -62,7 +61,9 @@ static Float:lochFloatSpeed = Float:0.25;
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
 
 //enabled handler
-new int:intEnabled = int:0; 
+static int:intEnabled = int:0; 
+
+static Handle:timerArray[MAXPLAYERS + 1];
 
 static const int:startingHealth = int:40;
 
@@ -104,9 +105,10 @@ public OnPluginStart()
 	HookEvent( "post_inventory_application", OnPostInventoryApplicationAndPlayerSpawn );
 	HookEvent( "player_spawn", OnPostInventoryApplicationAndPlayerSpawn );
 	
-	//hook for respawn timer
+	//hook for disabling respawn timer
 	HookEvent( "teamplay_round_start", OnMapChange );
-	//TimerHandle = CreateTimer(FloatMul(ballDelay, delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
+	
+	//watch for sentries
 	AddCommandListener(CommandListener_Build, "build");
 }
 
@@ -119,7 +121,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		if (intEnabled == int:1)
 		{
 			ServerCommand("mp_disable_respawn_times 1");
-			ResetTimer();
 			ScoutCheck();
 			//set all health to 40
 			for(new i = 1; i <= MAXPLAYERS; i++)
@@ -138,8 +139,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 			ServerCommand("sm_smj_global_enabled 0");
 			ServerCommand("sm_smj_global_limit 1");
 			ServerCommand("mp_disable_respawn_times 0");
-			CloseHandle(TimerHandle);
-			TimerHandle = INVALID_HANDLE;
 			ServerCommand("sm_resetspeed @all");
 			for(new i = 1; i <= MAXPLAYERS; i++)
 			{
@@ -186,10 +185,9 @@ stock GetSpeshulAmmo(client, wepslot)
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
+	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) < 1)) { ResetTimer(int:client); }
 	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
-	{
-		SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
-	}
+	{ SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1); }
 }
 
 //reset ammo when fired
@@ -197,18 +195,32 @@ public Action:timerRegen(Handle:timer)
 {
 	for(new i = 1; i <= MAXPLAYERS; i++)
 	{
-		if (IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
+		if((timerArray[i] == timer) && IsValidClient(i) && (GetSpeshulAmmo(i, TFWeaponSlot_Melee) < 1))
+		{ SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1); }
+		if ((timerArray[i] == timer)) 
 		{
-			SetSpeshulAmmo(i, TFWeaponSlot_Melee, 1);
+			CloseHandle(timerArray[i]);
+			timerArray[i] = INVALID_HANDLE; 
 		}
 	}
 }
 
-public ResetTimer()
+public ResetAllTimers()
 {
-		if (TimerHandle != INVALID_HANDLE) { CloseHandle(TimerHandle); }
-		TimerHandle = INVALID_HANDLE;
-		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
+	for(new i = 1; i <= MAXPLAYERS; i++) 
+	{ 
+		if (IsValidClient(i)) 
+		{ 
+			ResetTimer(int:i); 
+		} 
+	}
+}
+
+public ResetTimer(int:client)
+{
+	if (timerArray[client] != INVALID_HANDLE) { CloseHandle(timerArray[client]); }
+	timerArray[client] = INVALID_HANDLE;
+	timerArray[client] = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, _, TIMER_REPEAT);
 }
 
 
@@ -285,10 +297,9 @@ public CreateWeapons()
 public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
 	delayFloatMultiplier = Float:StringToFloat(newVal);
-	//every time this is set destroy the old timer and make a new timer, then issue cleavers with updated rates
+
 	if (intEnabled == int:1)
 	{
-		ResetTimer();
 		announceString = "Fire rate set to ";
 		new String:damn[5];
 		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
@@ -332,16 +343,11 @@ public ScoutCheck()
 {
 	if (intEnabled == int:1)
 	{
-		//scout only: infinite jumps and everyone's class is scout
+		//scout only
 		if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false) || StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
 		{
 			for(new i = 1; i <= MAXPLAYERS; i++)
-			{
-				if (IsValidClient(i))
-				{
-					TF2_SetPlayerClass(i, TFClass_Scout, false, true);
-				}
-			}
+			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Scout, false, true); } }
 		}
 		OnAllPluginsLoaded();
 		IssueNewWeapons();
@@ -396,7 +402,6 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 	{
 		ServerCommand("mp_disable_respawn_times 1");
 		ScoutCheck();
-		ResetTimer();
 	}
 }
 
