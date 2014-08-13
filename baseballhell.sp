@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.4.0"
+#define PLUGIN_VERSION  "1.58.5.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -301,21 +301,24 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 //handles a timer for baseball regeneration (isn't accurate, but is stable)
 public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (!StrEqual(oldVal, newVal))
+	delayFloatMultiplier = Float:StringToFloat(newVal);
+	//every time this is set destroy the old timer and make a new timer, then issue cleavers with updated rates
+	if (intEnabled == int:1)
 	{
-		//every time this is set destroy the old timer and make a new timer, then issue cleavers with updated rates
-		if (intEnabled == int:1)
+		CloseHandle(TimerHandle);
+		TimerHandle = INVALID_HANDLE;
+		TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
+		new String:damn[10];
+		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 10);
+		for(new i = 1; i <= MAXPLAYERS; i++)
 		{
-			CloseHandle(TimerHandle);
-			TimerHandle = INVALID_HANDLE;
+			if (IsValidClient(i))
+			{
+				PrintHintText( i, damn);
+			}
 		}
-		delayFloatMultiplier = Float:StringToFloat(newVal);
-		if (intEnabled == int:1)
-		{
-			TimerHandle = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , timerRegen, _, TIMER_REPEAT);
-			CreateWeapons();
-			IssueNewWeapons();
-		}
+		CreateWeapons();
+		IssueNewWeapons();
 	}
 }
 
