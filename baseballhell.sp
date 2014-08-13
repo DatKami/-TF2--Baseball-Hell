@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.15.0"
+#define PLUGIN_VERSION  "1.58.16.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -64,6 +64,8 @@ new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
 static int:intEnabled = int:0; 
 
 static Handle:timerArray[MAXPLAYERS + 1];
+
+static bool:cooldownArray[MAXPLAYERS + 1];
 
 static const int:startingHealth = int:40;
 
@@ -185,7 +187,7 @@ stock GetSpeshulAmmo(client, wepslot)
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) == 1)) { ResetTimer(int:client); }
+	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0)) { ResetTimer(int:client); }
 	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
 	{ SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1); }
 }
@@ -193,8 +195,8 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 //reset ammo when fired
 public Action:timerRegen(Handle:timer, any:data)
 {
-	if(IsValidClient(int:data) && (GetSpeshulAmmo(int:data, TFWeaponSlot_Melee) < 1))
-	{ SetSpeshulAmmo(int:data, TFWeaponSlot_Melee, 1); }
+	if(cooldownArray[int:data]) { cooldownArray[int:data] = false; }
+	if(IsValidClient(int:data) && (GetSpeshulAmmo(int:data, TFWeaponSlot_Melee) < 1)) { SetSpeshulAmmo(int:data, TFWeaponSlot_Melee, 1); }
 	timerArray[int:data] = INVALID_HANDLE;
 }
 
@@ -206,12 +208,11 @@ public ResetAllTimers()
 
 public ResetTimer(int:client)
 {
-	if (timerArray[client] != INVALID_HANDLE)
+	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
-		TriggerTimer(timerArray[client], false);
-		timerArray[client] = INVALID_HANDLE;
+		cooldownArray[client] = true;
+		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, client);
 	}
-	timerArray[client] = CreateTimer( FloatMul(Float:ballDelay, Float:delayFloatMultiplier) , Timer:timerRegen, client, TIMER_DATA_HNDL_CLOSE);
 }
 
 
