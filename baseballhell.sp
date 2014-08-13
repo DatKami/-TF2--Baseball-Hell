@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.59.4.0"
+#define PLUGIN_VERSION  "1.59.5.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -187,7 +187,10 @@ stock GetSpeshulAmmo(client, wepslot)
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0)) { ResetTimer(int:client); }
+	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0) && (FloatMul(Float:ballDelay, Float:delayFloatMultiplier) > Float:0.25)) 
+	{ ResetTimer(int:client); }
+	else if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1) && (FloatMul(Float:ballDelay, Float:delayFloatMultiplier) <= Float:0.25)) 
+	{ SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1); }
 	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
 	{ SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1); }
 }
@@ -211,8 +214,7 @@ public ResetTimer(int:client)
 	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
 		cooldownArray[client] = true;
-		//offset by .14 seconds for timer compensation
-		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier) - Float:0.14 , Timer:timerRegen, client);
+		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), Timer:timerRegen, client);
 	}
 }
 
@@ -307,12 +309,7 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 public AnnounceAll()
 {
 	for(new i = 1; i <= MAXPLAYERS; i++)
-	{
-		if (IsValidClient(i))
-		{
-			PrintHintText( i, announceString);
-		}
-	}
+	{ if (IsValidClient(i)){ PrintHintText( i, announceString); } }
 }
 
 public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[])
