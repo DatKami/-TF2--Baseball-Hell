@@ -21,7 +21,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.4.0"
+#define PLUGIN_VERSION  "1.60.5.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -123,6 +123,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		
 		if (intEnabled == int:1)
 		{
+			SetCartSpeed();
 			ServerCommand("mp_disable_respawn_times 1");
 			ScoutCheck();
 			//set all health to 40
@@ -433,12 +434,19 @@ public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadc
 		ScoutCheck();
 	}
 	//find a cart and mod it
+	SetCartSpeed();
+}
+
+public SetCartSpeed()
+{
 	new ent = FindEntityByClassname(-1, "func_tracktrain");
 	if (ent != -1)
 	{
-		DispatchKeyValueFloat(ent, "MaxSpeed", 400.0);
+		if (DispatchKeyValueFloat(ent, "Max Speed", 400.0))
+		{ announceString = "Hook was successful!"; }
+		else { announceString = "Hook was unsuccessful!"; }
+		AnnounceAll();
 	}
-
 }
 
 //crits should always be enabled while the game modifier is active
