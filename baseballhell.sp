@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.59.5.0"
+#define PLUGIN_VERSION  "1.60.1.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -269,6 +269,9 @@ public CreateWeapons()
 			break; //only create the scout bat if scouts only mode
 		}
 		baseBallString = "38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
+		
+		//concatenate eyelander attributes
+		StrCat(baseBallString, 100, " ; 292 ; 6 ; 388 ; 6");
 		
 		//concatenate the health reduction
 		StrCat(baseBallString, 100, " ; 125 ; ");
