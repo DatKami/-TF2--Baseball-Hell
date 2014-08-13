@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.58.2.1"
+#define PLUGIN_VERSION  "1.58.3.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -197,17 +197,14 @@ public resetArrays()
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if (GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1 && readyArray[client]) 
+	if (GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1 && readyArray[client] && (GetGameTime() >= GetEntPropFloat(client, Prop_Send, "m_flNextAttack"))) 
 	{
 		readyArray[client] = false;
 		SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1);
 	}
-	if (!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false))
+	if ((!StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false) && !StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)) && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
 	{
-		if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) 
-		{
-			SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
-		}
+		SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
 	}
 }
 
