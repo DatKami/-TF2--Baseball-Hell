@@ -3,7 +3,6 @@
 #include <tf2_stocks>
 #include <sdkhooks>
 #include <sourcemod>
-#include <sdktools>
 
 #define REQUIRE_EXTENSIONS
 #define AUTOLOAD_EXTENSIONS
@@ -21,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.9.0"
+#define PLUGIN_VERSION  "1.59.5.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -123,7 +122,6 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		
 		if (intEnabled == int:1)
 		{
-			SetCartSpeed();
 			ServerCommand("mp_disable_respawn_times 1");
 			ScoutCheck();
 			//set all health to 40
@@ -270,14 +268,7 @@ public CreateWeapons()
 		{
 			break; //only create the scout bat if scouts only mode
 		}
-		//in order: launch balls, set switch speed to 10%, attach a particle
 		baseBallString = "38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
-		
-		if (class != int:0) //if this class isnt a scout
-		{
-			//concatenate better cap speed
-			StrCat(baseBallString, 100, " ; 68 ; 1");
-		}
 		
 		//concatenate the health reduction
 		StrCat(baseBallString, 100, " ; 125 ; ");
@@ -395,6 +386,15 @@ public GiveArray(client)
 	}
 }
 
+public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
+{
+	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
+	{
+		ServerCommand("mp_disable_respawn_times 1");
+		ScoutCheck();
+	}
+}
+
 public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
 {
 	
@@ -422,39 +422,6 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		//disable sentry targeting on this person
 		new flags = GetEntityFlags(iClient)|FL_NOTARGET;
 		SetEntityFlags(iClient, flags);
-	}
-}
-
-public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
-{
-	//first map round
-	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
-	{
-		ServerCommand("mp_disable_respawn_times 1");
-		ScoutCheck();
-	}
-	//find a cart and mod it
-	SetCartSpeed();
-}
-
-public SetCartSpeed()
-{
-	new ent = FindEntityByClassname(-1, "func_tracktrain");
-	if (ent != -1)
-	{	/*
-		if (DispatchKeyValueFloat(ent, "max speed", 400.0))
-		{ announceString = "Hook was successful!"; }
-		else { announceString = "Hook was unsuccessful!"; }
-		AnnounceAll();
-		*/
-		/*
-		SetEntPropFloat(ent, Prop_Send, "m_maxSpeed", 400.0);
-		*/
-		SetVariantFloat(400.0);
-		if (AcceptEntityInput(ent, "m_maxSpeed"))
-		{ announceString = "Hook was successful!"; }
-		else { announceString = "Hook was unsuccessful!"; }
-		AnnounceAll();
 	}
 }
 
