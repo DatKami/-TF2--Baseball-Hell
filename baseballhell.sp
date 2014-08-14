@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.59.5.0"
+#define PLUGIN_VERSION  "1.60.10.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -268,7 +268,14 @@ public CreateWeapons()
 		{
 			break; //only create the scout bat if scouts only mode
 		}
+		//in order: launch balls, set switch speed to 10%, attach a particle
 		baseBallString = "38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
+		
+		if (class != int:0) //if this class isnt a scout
+		{
+			//concatenate better cap speed
+			StrCat(baseBallString, 100, " ; 68 ; 1");
+		}
 		
 		//concatenate the health reduction
 		StrCat(baseBallString, 100, " ; 125 ; ");
