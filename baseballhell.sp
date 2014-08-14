@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.11.0"
+#define PLUGIN_VERSION  "1.60.12.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -297,8 +297,8 @@ public CreateWeapons()
 	}
 	else
 	{
-		//in order: 100% crit (visual), proj speed * 2.45, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-		detonString = "408 ; 1 ; 103 ; 2.45 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+		//in order: 100% crit (visual), proj speed * 2.45, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, set detonator weapon mode, attack rate ??
+		detonString = "408 ; 1 ; 103 ; 2.45 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
 		detonFloatSpeed = FloatMul(delayFloatMultiplier, detonFloatMultiplier) ;
@@ -308,7 +308,7 @@ public CreateWeapons()
 		//concatenate the health reduction
 		StrCat(detonString, 100, " ; 125 ; -85");
 			
-		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 0, 9, 10, detonString, -1, _, true ); 
+		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 1, 9, 10, detonString, -1, _, true ); 
 	}
 }
 
@@ -347,7 +347,7 @@ public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[]
 	else if (StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to Scouts with bat only"; classMode = 1; weaponMode = 1; }
 	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to All classes with all weapons"; classMode = 0; weaponMode = 0; }
 	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to All classes, with bat only"; classMode = 0; weaponMode = 1; }
-	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 0; weaponMode = 2; }
+	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 1; weaponMode = 2; }
 	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0;}
 	StrCat(announceString, 100, daMode);
 	AnnounceAll();
@@ -397,7 +397,7 @@ public GiveArray(client)
 		TF2Items_GiveWeapon( client, LOCH_ID );
 	}
 	
-	if (weaponMode == 2 && classMode == 0) //deton mode, scout only
+	if (weaponMode == 2 && classMode == 1) //deton mode, scout only
 	{
 		TF2Items_GiveWeapon( client, DETON_ID ); //scout deton only
 	}	
