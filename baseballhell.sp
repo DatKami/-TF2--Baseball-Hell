@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.2.0"
+#define PLUGIN_VERSION  "1.61.3.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
