@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.1.0"
+#define PLUGIN_VERSION  "1.61.2.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -41,7 +41,7 @@ static Float:delayFloatMultiplier = Float:1.0;
 static const Float:cleaverFloatMultiplier = Float:0.3;
 static const Float:lochFloatMultiplier = Float:0.417;
 static const Float:detonFloatMultiplier = Float:0.125;
-static const Float:huntsFloatMultiplier = Float:0.125;
+static const Float:huntsFloatMultiplier = Float:0.0834;
 
 //these are for concatenation, you shouldn't touch these
 new String:baseBallString[100];
@@ -310,7 +310,7 @@ public CreateWeapons()
 	else if (weaponMode == 3)
 	{
 		//in order: 100% crit (visual), proj speed * 1.66, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-		huntsString = "408 ; 1 ; 103 ; 1.66 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+		huntsString = "408 ; 1 ; 103 ; 0.10 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the huntsman
 		huntsFloatSpeed = FloatMul(delayFloatMultiplier, huntsFloatMultiplier) ;
@@ -318,7 +318,7 @@ public CreateWeapons()
 		StrCat(huntsString, 200, huntsStringSpeedMultiplier);
 			
 		//concatenate the health reduction
-		StrCat(detonString, 100, " ; 125 ; -85");
+		StrCat(huntsString, 100, " ; 125 ; -85");
 			
 		TF2Items_CreateWeapon( HUNTS_ID, "tf_weapon_compound_bow", 56, 0, 9, 10, huntsString, -1, _, true ); 
 	}
