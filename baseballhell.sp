@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.3.0"
+#define PLUGIN_VERSION  "1.61.4.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -117,6 +117,9 @@ public OnPluginStart()
 	//hook for disabling respawn timer
 	HookEvent( "teamplay_round_start", OnMapChange );
 	
+	//hook for sounds
+	AddNormalSoundHook(SHook);
+	
 	//watch for sentries
 	AddCommandListener(CommandListener_Build, "build");
 }
@@ -134,10 +137,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 			//set all health to 40 (prevents overheal carryover)
 			for(new i = 1; i <= MAXPLAYERS; i++)
 			{
-				if (IsValidClient(i)) 
-				{
-					SetEntData(i, FindDataMapOffs(i, "m_iHealth"), startingHealth, 4, true); 
-				}
+				if (IsValidClient(i)) { SetEntData(i, FindDataMapOffs(i, "m_iHealth"), startingHealth, 4, true); }
 			}
 		}
 		else
@@ -161,6 +161,13 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		}
 	}
 }
+
+public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
+{	//hook pull sounds because they cause pitch errors
+    if ((StrContains(sample, "bow_shoot_pull.wav", false) != -1 || StrContains(sample, "bow_shoot_pull_short.wav", false) != -1 || StrContains(sample, "bow_shoot_pull_reverse.wav", false) != -1) && entity > 0 && entity <= MaxClients)
+    { return Plugin_Changed; } //EmitAmbientSound("ui/tv_tune.mp3", fTargetPos, target, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL);
+    return Plugin_Continue;
+}  
 
 //checks if it's safe to modify the client at this index
 stock bool:IsValidClient(client)
