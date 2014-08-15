@@ -20,7 +20,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.12.0"
+#define PLUGIN_VERSION  "1.60.13.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -297,8 +297,8 @@ public CreateWeapons()
 	}
 	else
 	{
-		//in order: 100% crit (visual), proj speed * 2.45, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, set detonator weapon mode, attack rate ??
-		detonString = "408 ; 1 ; 103 ; 2.45 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
+		//in order: 100% crit (visual), proj speed * 1.5, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, set detonator weapon mode, attack rate ??
+		detonString = "408 ; 1 ; 103 ; 1.5 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
 		detonFloatSpeed = FloatMul(delayFloatMultiplier, detonFloatMultiplier) ;
