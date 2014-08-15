@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.6.0"
+#define PLUGIN_VERSION  "1.61.7.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -164,8 +164,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 
 public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {	//hook pull sounds because they cause pitch errors
-    if ((StrContains(sample, "bow_arrow_slide.wav", false) != -1 || StrContains(sample, "bow_shoot_pull.wav", false) != -1 || StrContains(sample, "bow_shoot_pull_short.wav", false) != -1 || StrContains(sample, "bow_shoot_pull_reverse.wav", false) != -1) && entity > 0 && entity <= MaxClients)
-    { pitch = 255; return Plugin_Changed; } //EmitAmbientSound("ui/tv_tune.mp3", fTargetPos, target, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL);
+    if ( pitch >= 256 ) { pitch = 255; return Plugin_Changed; } //EmitAmbientSound("ui/tv_tune.mp3", fTargetPos, target, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL);
     return Plugin_Continue;
 }  
 
