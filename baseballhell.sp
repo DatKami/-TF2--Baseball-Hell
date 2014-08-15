@@ -14,19 +14,21 @@
 #define REQUIRE_PLUGIN
 #include <tf2items_giveweapon>
 
-#define LOCH_ID 9090
-#define ORNAMENT_ID 9091
-#define CLEAVER_ID 9092
-
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.60.13.0"
+#define PLUGIN_VERSION  "1.61.1.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
  
-static const int:DETON_ID = int:9093; 
+#define LOCH_ID 9090
+#define ORNAMENT_ID 9091
+#define CLEAVER_ID 9092
+#define DETON_ID 9093
+#define HUNTS_ID 9094
+
+ 
 static const int:BASEBALL_ID = int:9200; 
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
@@ -39,29 +41,33 @@ static Float:delayFloatMultiplier = Float:1.0;
 static const Float:cleaverFloatMultiplier = Float:0.3;
 static const Float:lochFloatMultiplier = Float:0.417;
 static const Float:detonFloatMultiplier = Float:0.125;
-
-//this is the bat's base fire rate, don't change this
-static const Float:ballDelay = Float:0.25;
+static const Float:huntsFloatMultiplier = Float:0.125;
 
 //these are for concatenation, you shouldn't touch these
 new String:baseBallString[100];
 new String:cleaverString[100];
 new String:lochString[200];
 new String:detonString[200];
+new String:huntsString[200];
 new String:announceString[100];
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 new String:detonStringSpeedMultiplier[5];
+new String:huntsStringSpeedMultiplier[5];
+
+//this is the bat's base fire rate, don't change this
+static const Float:ballDelay = Float:0.25;
 
 //these are working multipliers
 static Float:cleaverFloatSpeed = Float:0.25;
 static Float:lochFloatSpeed = Float:0.25;
 static Float:detonFloatSpeed = Float:0.25;
+static Float:huntsFloatSpeed = Float:0.25;
 
 //gamemode handlers
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
-new classMode = 1; //0 = all classes, 1 = scouts only
-new weaponMode = 0; //0 = all weapons, 1 = bat only, 2 = detonator only
+new classMode = 1; //0 = all classes, 1 = scouts only, 8 = snipers only
+new weaponMode = 0; //0 = all weapons, 1 = bat only, 2 = detonator only, 3 = huntsman only
 static int:intEnabled = int:0; //0 = gamemode disabled, 1 = enabled
 
 //sandman cooldown helpers
@@ -219,26 +225,17 @@ public OnAllPluginsLoaded()
 	CreateWeapons();
 	
 	//this plugin needs scout multijump
-	if (intEnabled == int:1)
-	{
-		ServerCommand("sm_smj_global_enabled 1");
-	}
+	if (intEnabled == int:1) { ServerCommand("sm_smj_global_enabled 1"); }
 	
 	//the scout only modes enable infinitejump
-	if (classMode == 1 && (intEnabled == int:1))
-	{
-		ServerCommand("sm_smj_global_limit 0");
-	}
-	else
-	{ //the all class modes disable scouts double jump (this is changed somewhere else)
-		ServerCommand("sm_smj_global_limit 1");
-	}
+	if (classMode == 1 && (intEnabled == int:1)) { ServerCommand("sm_smj_global_limit 0"); }
+	else { ServerCommand("sm_smj_global_limit 1"); }
 } 
 
 //create weapons dependent on the situation
 public CreateWeapons()
 {
-	if (weaponMode != 2)
+	if (weaponMode == 0 || weaponMode == 1)
 	{
 		if (weaponMode == 0)
 		{
@@ -295,12 +292,12 @@ public CreateWeapons()
 			TF2Items_CreateWeapon( (BASEBALL_ID + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
 		}
 	}
-	else
+	else if (weaponMode == 2)
 	{
 		//in order: 100% crit (visual), proj speed * 1.5, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, set detonator weapon mode, attack rate ??
 		detonString = "408 ; 1 ; 103 ; 1.5 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
 			
-		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
+		//concatenate the fire delay multiplier onto the attributes of the detonator
 		detonFloatSpeed = FloatMul(delayFloatMultiplier, detonFloatMultiplier) ;
 		FloatToString(detonFloatSpeed, detonStringSpeedMultiplier, 5);
 		StrCat(detonString, 200, detonStringSpeedMultiplier);
@@ -308,7 +305,22 @@ public CreateWeapons()
 		//concatenate the health reduction
 		StrCat(detonString, 100, " ; 125 ; -85");
 			
-		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 1, 9, 10, detonString, -1, _, true ); 
+		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 1, 9, 10, detonString, -1, _, true );
+	}
+	else if (weaponMode == 3)
+	{
+		//in order: 100% crit (visual), proj speed * 1.66, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
+		huntsString = "408 ; 1 ; 103 ; 1.66 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+			
+		//concatenate the fire delay multiplier onto the attributes of the huntsman
+		huntsFloatSpeed = FloatMul(delayFloatMultiplier, huntsFloatMultiplier) ;
+		FloatToString(huntsFloatSpeed, huntsStringSpeedMultiplier, 5);
+		StrCat(huntsString, 200, huntsStringSpeedMultiplier);
+			
+		//concatenate the health reduction
+		StrCat(detonString, 100, " ; 125 ; -85");
+			
+		TF2Items_CreateWeapon( HUNTS_ID, "tf_weapon_compound_bow", 56, 0, 9, 10, huntsString, -1, _, true ); 
 	}
 }
 
@@ -348,6 +360,7 @@ public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[]
 	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to All classes with all weapons"; classMode = 0; weaponMode = 0; }
 	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to All classes, with bat only"; classMode = 0; weaponMode = 1; }
 	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 1; weaponMode = 2; }
+	else if (StrEqual("HUNTSMAN", gameMode, false)){ daMode = "to Snipers with Huntsman only"; classMode = 8; weaponMode = 3; }
 	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0;}
 	StrCat(announceString, 100, daMode);
 	AnnounceAll();
@@ -363,6 +376,11 @@ public ScoutCheck()
 		{
 			for(new i = 1; i <= MAXPLAYERS; i++)
 			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Scout, false, true); } }
+		}
+		else if (classMode == 8)
+		{
+			for(new i = 1; i <= MAXPLAYERS; i++)
+			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Sniper, false, true); } }
 		}
 		OnAllPluginsLoaded();
 		IssueNewWeapons();
@@ -397,10 +415,14 @@ public GiveArray(client)
 		TF2Items_GiveWeapon( client, LOCH_ID );
 	}
 	
-	if (weaponMode == 2 && classMode == 1) //deton mode, scout only
+	if (weaponMode == 2 && classMode == 1)
 	{
 		TF2Items_GiveWeapon( client, DETON_ID ); //scout deton only
 	}	
+	else if (weaponMode == 3 && classMode == 8)
+	{
+		TF2Items_GiveWeapon( client, HUNTS_ID ); //sniper huntsman only
+	}
 	else
 	{
 		//each sandman has a different health decrease assigned to it, for different classes
@@ -439,8 +461,9 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 	
 		//if scout only game mode set this person to scout
 		if (classMode == 1) { TF2_SetPlayerClass(iClient, TFClass_Scout, false, true); }
+		else if (classMode == 8) { TF2_SetPlayerClass(iClient, TFClass_Sniper, false, true); }
 		//make everyone fast like scout (this is inefficient but least console spam)
-		else if (classMode == 0) { ServerCommand("sm_setspeed @all 400"); }
+		if (classMode != 1) { ServerCommand("sm_setspeed @all 400"); }
 		
 		RemoveAllWeapons(iClient);
 		GiveArray(iClient);
