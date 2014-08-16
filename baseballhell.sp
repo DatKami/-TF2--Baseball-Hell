@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.10.0"
+#define PLUGIN_VERSION  "1.61.11.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -322,8 +322,8 @@ public CreateWeapons()
 	}
 	else if (weaponMode == 3)
 	{
-		//in order: 100% crit (visual), proj speed * 1.66, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-		huntsString = "408 ; 1 ; 103 ; 0.10 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+		//in order: 100% crit (visual), attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
+		huntsString = "408 ; 1 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the huntsman
 		huntsFloatSpeed = FloatMul(delayFloatMultiplier, huntsFloatMultiplier) ;
