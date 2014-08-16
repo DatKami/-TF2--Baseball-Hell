@@ -16,14 +16,14 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.11.0"
+#define PLUGIN_VERSION  "1.62.1.0nw"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
- 
+
+/*
 #define LOCH_ID 9090
-#define ORNAMENT_ID 9091
 #define CLEAVER_ID 9092
 #define DETON_ID 9093
 #define HUNTS_ID 9094
@@ -31,6 +31,7 @@ new TF2ItemSlot = 8;
 
  
 static const int:BASEBALL_ID = int:9200; 
+*/
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
@@ -38,6 +39,44 @@ new Handle:handleGameMode = INVALID_HANDLE;
 //this is the global delay multiplier, set by baseballhell_delay_multi
 static Float:delayFloatMultiplier = Float:1.0;
 
+static const ids[6] =
+{
+	9200,
+	9092,
+	9090,
+	9093,
+	9094,
+	9095
+}
+
+//in order, ball delay, cleaver multi, loch multi, deton multi, hunts multi, rocket multi,
+static const Float:floatMultiplier[6] =
+{
+	0.2500,
+	0.3000,
+	0.4167,
+	0.1250,
+	0.0834,
+	0.3125
+};
+
+static String:concatString[6][200];
+
+static String:stringMultiplier[6][6];
+
+static workingFloat[6] =
+{
+	0.25,
+	0.25,
+	0.25,
+	0.25,
+	0.25,
+	0.25
+}
+
+/*
+//this is the bat's base fire rate, don't change this
+static const Float:ballDelay = Float:0.25;
 //this is the modifier to affect the natural rate of these weapons, don't change these
 static const Float:cleaverFloatMultiplier = Float:0.3;
 static const Float:lochFloatMultiplier = Float:0.417;
@@ -52,15 +91,13 @@ new String:lochString[200];
 new String:detonString[200];
 new String:huntsString[200];
 new String:rocketString[200];
-new String:announceString[100];
+
+
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 new String:detonStringSpeedMultiplier[5];
 new String:huntsStringSpeedMultiplier[5];
 new String:rocketStringSpeedMultiplier[5];
-
-//this is the bat's base fire rate, don't change this
-static const Float:ballDelay = Float:0.25;
 
 //these are working multipliers
 static Float:cleaverFloatSpeed = Float:0.25;
@@ -68,6 +105,9 @@ static Float:lochFloatSpeed = Float:0.25;
 static Float:detonFloatSpeed = Float:0.25;
 static Float:huntsFloatSpeed = Float:0.25;
 static Float:rocketFloatSpeed = Float:0.25;
+*/
+
+new String:announceString[100];
 
 //gamemode handlers
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
@@ -253,24 +293,24 @@ public CreateWeapons()
 		{
 			//in order: 100% crit (visual), shatter, proj speed * 2.45, attach particle, reload speed 10%, blast radius 4%
 			//clip size 25%, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-			lochString = "408 ; 1 ; 127 ; 2 ; 103 ; 2.45 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+			concatString[2] = "408 ; 1 ; 127 ; 2 ; 103 ; 2.45 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 			
 			//concatenate the fire delay multiplier onto the attributes of the loch-n-load
-			lochFloatSpeed = FloatMul(delayFloatMultiplier, lochFloatMultiplier) ;
-			lochFloatSpeed = FloatSub(lochFloatSpeed, lochFloatMultiplier / Float:2.0 ) ; //compensate for reload animation
-			FloatToString(lochFloatSpeed, lochStringSpeedMultiplier, 5);
-			StrCat(lochString, 200, lochStringSpeedMultiplier);
+			workingFloat[2] = FloatMul(delayFloatMultiplier, floatMultiplier[2]) ;
+			workingFloat[2] = FloatSub(workingFloat[2], floatMultiplier[2] / Float:2.0 ) ; //compensate for reload animation
+			FloatToString(workingFloat[2], stringMultiplier[2], 6);
+			StrCat(concatString[2], 200, stringMultiplier[2]);
 
-			TF2Items_CreateWeapon( LOCH_ID, "tf_weapon_grenadelauncher", 308, 0, 9, 10, lochString, -1, _, true ); 
+			TF2Items_CreateWeapon( ids[2], "tf_weapon_grenadelauncher", 308, 0, 9, 10, concatString[2], -1, _, true ); 
 			
-			cleaverString = "408 ; 1 ; 370 ; 56 ; 178 ; 0.1 ; 6 ; ";
+			concatString[1] = "408 ; 1 ; 370 ; 56 ; 178 ; 0.1 ; 6 ; ";
 			
 			//concatenate the fire delay multiplier onto the attributes of the cleaver
-			cleaverFloatSpeed = FloatMul(delayFloatMultiplier, cleaverFloatMultiplier) ;
-			FloatToString(cleaverFloatSpeed, cleaverStringSpeedMultiplier, 5);
-			StrCat(cleaverString, 100, cleaverStringSpeedMultiplier);
+			workingFloat[1] = FloatMul(delayFloatMultiplier, floatMultiplier[1]) ;
+			FloatToString(workingFloat[1], stringMultiplier[1], 6);
+			StrCat(concatString[1], 200, stringMultiplier[1]);
 			
-			TF2Items_CreateWeapon( CLEAVER_ID, "tf_weapon_cleaver", 812, 1, 9, 10, cleaverString, -1, _, true ); 
+			TF2Items_CreateWeapon( ids[1], "tf_weapon_cleaver", 812, 1, 9, 10, concatString[1], -1, _, true ); 
 		}
 		
 		//for each class
@@ -279,82 +319,82 @@ public CreateWeapons()
 			if ((class != int:0) && classMode == 1)
 			{ break; } //only create the scout bat if scouts only mode
 			//in order: launch balls, set switch speed to 10%, attach a particle
-			baseBallString = "408 ; 1 ; 38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
+			concatString[0] = "408 ; 1 ; 38 ; 1 ; 178 ; 0.1 ; 370 ; 43";
 			
 			if (class != int:0) //if this class isnt a scout
 			{
 				//concatenate better cap speed
-				StrCat(baseBallString, 100, " ; 68 ; 1");
+				StrCat(concatString[0], 200, " ; 68 ; 1");
 			}
 			
 			//concatenate the health reduction
-			StrCat(baseBallString, 100, " ; 125 ; ");
-			StrCat(baseBallString, 100, healthReduc[class]);
+			StrCat(concatString[0], 200, " ; 125 ; ");
+			StrCat(concatString[0], 200, healthReduc[class]);
 
 			//concatenate an attribute on engineer's bat; bots can only build minisentries, if they can at all
 			if (class == int:5)
 			{
-				StrCat(baseBallString, 100, " ; 124 ; 1");
+				StrCat(concatString[0], 200, " ; 124 ; 1");
 			}
 			//concatenate no double jumps onto a scout's bat if a scout only mode is not on
 			else if ((classMode != 1) && (class == int:0))
 			{
-				StrCat(baseBallString, 100, " ; 49 ; 1"); //no double jumps on all player modes
+				StrCat(concatString[0], 200, " ; 49 ; 1"); //no double jumps on all player modes
 			}
-			TF2Items_CreateWeapon( (BASEBALL_ID + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
+			TF2Items_CreateWeapon( (ids[0] + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
 		}
 	}
 	else if (weaponMode == 2)
 	{
 		//in order: 100% crit (visual), proj speed * 1.5, attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, set detonator weapon mode, attack rate ??
-		detonString = "408 ; 1 ; 103 ; 1.5 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
+		concatString[3] = "408 ; 1 ; 103 ; 1.5 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 144 ; 1.0 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the detonator
-		detonFloatSpeed = FloatMul(delayFloatMultiplier, detonFloatMultiplier) ;
-		FloatToString(detonFloatSpeed, detonStringSpeedMultiplier, 5);
-		StrCat(detonString, 200, detonStringSpeedMultiplier);
+		workingFloat[3] = FloatMul(delayFloatMultiplier, floatMultiplier[3]) ;
+		FloatToString(workingFloat[3], stringMultiplier[3], 6);
+		StrCat(concatString[3], 200, stringMultiplier[3]);
 			
 		//concatenate the health reduction
-		StrCat(detonString, 100, " ; 125 ; ");
-		StrCat(detonString, 100, healthReduc[0]);
+		StrCat(concatString[3], 200, " ; 125 ; ");
+		StrCat(concatString[3], 200, healthReduc[0]);
 			
-		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 1, 9, 10, detonString, -1, _, true );
+		TF2Items_CreateWeapon( ids[3], "tf_weapon_flaregun", 351, 1, 9, 10, concatString[3], -1, _, true );
 	}
 	else if (weaponMode == 3)
 	{
 		//in order: 100% crit (visual), attach particle, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-		huntsString = "408 ; 1 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+		concatString[4] = "408 ; 1 ; 370 ; 1 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the huntsman
-		huntsFloatSpeed = FloatMul(delayFloatMultiplier, huntsFloatMultiplier) ;
-		FloatToString(huntsFloatSpeed, huntsStringSpeedMultiplier, 5);
-		StrCat(huntsString, 200, huntsStringSpeedMultiplier);
+		workingFloat[4] = FloatMul(delayFloatMultiplier, floatMultiplier[4]) ;
+		FloatToString(workingFloat[4], stringMultiplier[4], 6);
+		StrCat(concatString[4], 200, stringMultiplier[4]);
 			
 		//concatenate the health reduction
-		StrCat(huntsString, 100, " ; 125 ; ");
-		StrCat(huntsString, 100, healthReduc[7]);
+		StrCat(concatString[4], 200, " ; 125 ; ");
+		StrCat(concatString[4], 200, healthReduc[7]);
 		
 		//if (class != int:0) //if this class isnt a scout
 		//{
 			//concatenate better cap speed
-		StrCat(huntsString, 100, " ; 68 ; 1");
+		StrCat(concatString[4], 200, " ; 68 ; 1");
 		//}
 			
-		TF2Items_CreateWeapon( HUNTS_ID, "tf_weapon_compound_bow", 56, 0, 9, 10, huntsString, -1, _, true ); 
+		TF2Items_CreateWeapon( ids[4], "tf_weapon_compound_bow", 56, 0, 9, 10, concatString[4], -1, _, true ); 
 	}
-	else if (weaponMode == 4)
+	else if (weaponMode == 4) // valve rocket launcher
 	{
 		//in order: 100% crit (visual), proj speed * 2.72, attach particle, reload speed 10%, blast radius 4%
 		//clip size 25%, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
-		rocketString = "408 ; 1 ; 103 ; 2.72 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+		concatString[5] = "408 ; 1 ; 103 ; 2.72 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
 			
 		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
-		rocketFloatSpeed = FloatMul(delayFloatMultiplier, rocketFloatMultiplier) ;
-		rocketFloatSpeed = FloatSub(rocketFloatSpeed, 0.115 ) ; //compensate for reload animation
-		FloatToString(rocketFloatSpeed, rocketStringSpeedMultiplier, 5);
-		StrCat(rocketString, 200, rocketStringSpeedMultiplier);
+		workingFloat[5] = FloatMul(delayFloatMultiplier, floatMultiplier[5]) ;
+		workingFloat[5] = FloatSub(workingFloat[5], 0.115 ) ; //compensate for reload animation
+		FloatToString(workingFloat[5], stringMultiplier[5], 6);
+		StrCat(concatString[5], 200, stringMultiplier[5]);
 
-		TF2Items_CreateWeapon( ROCKET_ID, "tf_weapon_rocketlauncher", 18, 0, 9, 10, rocketString, -1, _, true ); 
+		TF2Items_CreateWeapon( ids[5], "tf_weapon_rocketlauncher", 18, 0, 9, 10, concatString[5], -1, _, true ); 
 	}
 }
 
@@ -366,19 +406,19 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 	if (intEnabled == int:1)
 	{
 		announceString = "Fire rate set to ";
-		new String:damn[5];
+		new String:damn[6];
 		if (weaponMode != 3)
 		{
-			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 6);
 			StrCat(announceString, 100, damn);
 			StrCat(announceString, 100, " seconds");
 		}
 		else
 		{
-			FloatToString(ballDelay * delayFloatMultiplier * 2 / 3 , damn, 5);
+			FloatToString(ballDelay * delayFloatMultiplier * 2 / 3 , damn, 6);
 			StrCat(announceString, 100, damn);
 			StrCat(announceString, 100, " seconds at no charge, ");
-			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 6);
 			StrCat(announceString, 100, damn);
 			StrCat(announceString, 100, " seconds at full charge");
 		}
@@ -458,36 +498,36 @@ public GiveArray(client)
 	//all weapons only
 	if (weaponMode == 0)
 	{
-		TF2Items_GiveWeapon( client, CLEAVER_ID );
-		TF2Items_GiveWeapon( client, LOCH_ID );
+		TF2Items_GiveWeapon( client, ids[1] );
+		TF2Items_GiveWeapon( client, ids[2] );
 	}
 	
 	if (weaponMode == 2 && classMode == 1)
 	{
-		TF2Items_GiveWeapon( client, DETON_ID ); //scout deton only
+		TF2Items_GiveWeapon( client, ids[3] ); //scout deton only
 	}	
 	else if (weaponMode == 3 && classMode == 8)
 	{
-		TF2Items_GiveWeapon( client, HUNTS_ID ); //sniper huntsman only
+		TF2Items_GiveWeapon( client, ids[4] ); //sniper huntsman only
 	}
 	else if (weaponMode == 4 && classMode == 1)
 	{
-		TF2Items_GiveWeapon( client, ROCKET_ID ); //sniper huntsman only
+		TF2Items_GiveWeapon( client, ids[5] ); //sniper huntsman only
 	}
 	else
 	{
 		//each sandman has a different health decrease assigned to it, for different classes
 		switch(TF2_GetPlayerClass(client))
 		{
-			case TFClass_Scout: TF2Items_GiveWeapon( client, BASEBALL_ID );
-			case TFClass_Soldier: TF2Items_GiveWeapon( client, BASEBALL_ID + int:1 );
-			case TFClass_Pyro: TF2Items_GiveWeapon( client, BASEBALL_ID + int:2 );
-			case TFClass_DemoMan: TF2Items_GiveWeapon( client, BASEBALL_ID + int:3 );
-			case TFClass_Heavy: TF2Items_GiveWeapon( client, BASEBALL_ID + int:4 );
-			case TFClass_Engineer: TF2Items_GiveWeapon( client, BASEBALL_ID + int:5 );
-			case TFClass_Medic: TF2Items_GiveWeapon( client, BASEBALL_ID + int:6 );
-			case TFClass_Sniper: TF2Items_GiveWeapon( client, BASEBALL_ID + int:7 );
-			case TFClass_Spy: TF2Items_GiveWeapon( client, BASEBALL_ID + int:8 );
+			case TFClass_Scout: TF2Items_GiveWeapon( client, ids[0] );
+			case TFClass_Soldier: TF2Items_GiveWeapon( client, ids[0] + int:1 );
+			case TFClass_Pyro: TF2Items_GiveWeapon( client, ids[0] + int:2 );
+			case TFClass_DemoMan: TF2Items_GiveWeapon( client, ids[0] + int:3 );
+			case TFClass_Heavy: TF2Items_GiveWeapon( client, ids[0] + int:4 );
+			case TFClass_Engineer: TF2Items_GiveWeapon( client, ids[0] + int:5 );
+			case TFClass_Medic: TF2Items_GiveWeapon( client, ids[0] + int:6 );
+			case TFClass_Sniper: TF2Items_GiveWeapon( client, ids[0] + int:7 );
+			case TFClass_Spy: TF2Items_GiveWeapon( client, ids[0] + int:8 );
 		}
 	}
 }
