@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.7.0"
+#define PLUGIN_VERSION  "1.61.8.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -164,8 +164,9 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 
 public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {	//hook pull sounds because they cause pitch errors
-    if ( pitch >= 256 ) { pitch = 255; return Plugin_Changed; } //EmitAmbientSound("ui/tv_tune.mp3", fTargetPos, target, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL);
-    return Plugin_Continue;
+	if ( pitch >= 256 ) { pitch = 255; return Plugin_Changed; }
+	if ( volume > 1.0 ) { volume = 1.0; return Plugin_Changed; }
+	return Plugin_Continue;
 }  
 
 //checks if it's safe to modify the client at this index
@@ -309,7 +310,8 @@ public CreateWeapons()
 		StrCat(detonString, 200, detonStringSpeedMultiplier);
 			
 		//concatenate the health reduction
-		StrCat(detonString, 100, " ; 125 ; -85");
+		StrCat(detonString, 100, " ; 125 ; ");
+		StrCat(detonString, 100, healthReduc[0]);
 			
 		TF2Items_CreateWeapon( DETON_ID, "tf_weapon_flaregun", 351, 1, 9, 10, detonString, -1, _, true );
 	}
@@ -324,7 +326,14 @@ public CreateWeapons()
 		StrCat(huntsString, 200, huntsStringSpeedMultiplier);
 			
 		//concatenate the health reduction
-		StrCat(huntsString, 100, " ; 125 ; -85");
+		StrCat(huntsString, 100, " ; 125 ; ");
+		StrCat(huntsString, 100, healthReduc[7]);
+		
+		//if (class != int:0) //if this class isnt a scout
+		//{
+			//concatenate better cap speed
+		StrCat(huntsString, 100, " ; 68 ; 1");
+		//}
 			
 		TF2Items_CreateWeapon( HUNTS_ID, "tf_weapon_compound_bow", 56, 0, 9, 10, huntsString, -1, _, true ); 
 	}
