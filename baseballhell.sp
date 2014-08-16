@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.61.8.0"
+#define PLUGIN_VERSION  "1.61.10.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -27,6 +27,7 @@ new TF2ItemSlot = 8;
 #define CLEAVER_ID 9092
 #define DETON_ID 9093
 #define HUNTS_ID 9094
+#define ROCKET_ID 9095
 
  
 static const int:BASEBALL_ID = int:9200; 
@@ -42,6 +43,7 @@ static const Float:cleaverFloatMultiplier = Float:0.3;
 static const Float:lochFloatMultiplier = Float:0.417;
 static const Float:detonFloatMultiplier = Float:0.125;
 static const Float:huntsFloatMultiplier = Float:0.0834;
+static const Float:rocketFloatMultiplier = Float:0.3125;
 
 //these are for concatenation, you shouldn't touch these
 new String:baseBallString[100];
@@ -49,11 +51,13 @@ new String:cleaverString[100];
 new String:lochString[200];
 new String:detonString[200];
 new String:huntsString[200];
+new String:rocketString[200];
 new String:announceString[100];
 new String:cleaverStringSpeedMultiplier[5];
 new String:lochStringSpeedMultiplier[5];
 new String:detonStringSpeedMultiplier[5];
 new String:huntsStringSpeedMultiplier[5];
+new String:rocketStringSpeedMultiplier[5];
 
 //this is the bat's base fire rate, don't change this
 static const Float:ballDelay = Float:0.25;
@@ -63,11 +67,12 @@ static Float:cleaverFloatSpeed = Float:0.25;
 static Float:lochFloatSpeed = Float:0.25;
 static Float:detonFloatSpeed = Float:0.25;
 static Float:huntsFloatSpeed = Float:0.25;
+static Float:rocketFloatSpeed = Float:0.25;
 
 //gamemode handlers
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
 new classMode = 1; //0 = all classes, 1 = scouts only, 8 = snipers only
-new weaponMode = 0; //0 = all weapons, 1 = bat only, 2 = detonator only, 3 = huntsman only
+new weaponMode = 0; //0 = all weapons, 1 = bat only, 2 = detonator only, 3 = huntsman only, 4 = rocket launcher only
 static int:intEnabled = int:0; //0 = gamemode disabled, 1 = enabled
 
 //sandman cooldown helpers
@@ -337,6 +342,20 @@ public CreateWeapons()
 			
 		TF2Items_CreateWeapon( HUNTS_ID, "tf_weapon_compound_bow", 56, 0, 9, 10, huntsString, -1, _, true ); 
 	}
+	else if (weaponMode == 4)
+	{
+		//in order: 100% crit (visual), proj speed * 2.72, attach particle, reload speed 10%, blast radius 4%
+		//clip size 25%, ammo regen 100%, max ammo 200%, switch speed 10%, attack rate ??
+		rocketString = "408 ; 1 ; 103 ; 2.72 ; 370 ; 68 ; 97 ; 0.1 ; 100 ; 0.04 ; 3 ; 0.25 ; 112 ; 1 ; 76 ; 2 ; 178 ; 0.1 ; 6 ; ";
+			
+		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
+		rocketFloatSpeed = FloatMul(delayFloatMultiplier, rocketFloatMultiplier) ;
+		rocketFloatSpeed = FloatSub(rocketFloatSpeed, 0.115 ) ; //compensate for reload animation
+		FloatToString(rocketFloatSpeed, rocketStringSpeedMultiplier, 5);
+		StrCat(rocketString, 200, rocketStringSpeedMultiplier);
+
+		TF2Items_CreateWeapon( ROCKET_ID, "tf_weapon_rocketlauncher", 18, 0, 9, 10, rocketString, -1, _, true ); 
+	}
 }
 
 //sets the global fire rate multiplier, then announces
@@ -348,9 +367,21 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 	{
 		announceString = "Fire rate set to ";
 		new String:damn[5];
-		FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
-		StrCat(announceString, 100, damn);
-		StrCat(announceString, 100, " seconds");
+		if (weaponMode != 3)
+		{
+			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+			StrCat(announceString, 100, damn);
+			StrCat(announceString, 100, " seconds");
+		}
+		else
+		{
+			FloatToString(ballDelay * delayFloatMultiplier * 2 / 3 , damn, 5);
+			StrCat(announceString, 100, damn);
+			StrCat(announceString, 100, " seconds at no charge, ");
+			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 5);
+			StrCat(announceString, 100, damn);
+			StrCat(announceString, 100, " seconds at full charge");
+		}
 		AnnounceAll();
 		CreateWeapons(); 
 		IssueNewWeapons();
@@ -376,6 +407,7 @@ public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[]
 	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to All classes, with bat only"; classMode = 0; weaponMode = 1; }
 	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 1; weaponMode = 2; }
 	else if (StrEqual("HUNTSMAN", gameMode, false)){ daMode = "to Snipers with Huntsman only"; classMode = 8; weaponMode = 3; }
+	else if (StrEqual("ROCKETMAN", gameMode, false)){ daMode = "to Scouts with Valve Launchers only"; classMode = 1; weaponMode = 4; }
 	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0;}
 	StrCat(announceString, 100, daMode);
 	AnnounceAll();
@@ -437,6 +469,10 @@ public GiveArray(client)
 	else if (weaponMode == 3 && classMode == 8)
 	{
 		TF2Items_GiveWeapon( client, HUNTS_ID ); //sniper huntsman only
+	}
+	else if (weaponMode == 4 && classMode == 1)
+	{
+		TF2Items_GiveWeapon( client, ROCKET_ID ); //sniper huntsman only
 	}
 	else
 	{
