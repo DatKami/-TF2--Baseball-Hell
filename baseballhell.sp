@@ -135,9 +135,7 @@ public OnClientPutInServer(client)
 {
     speedSet[client] = false;
     if(client > 0 && client <= MaxClients && IsClientInGame(client))
-       {
-            SDKHook(client, SDKHook_PreThink, SDKHooks_OnPreThink);    
-       }
+       { SDKHook(client, SDKHook_PreThink, SDKHooks_OnPreThink); }
 }
 
 public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
@@ -146,7 +144,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 	
 	if (intEnabled == int:1)
 	{
-		ServerCommand("mp_disable_respawn_times 1");
+		SetConVarInt(FindConVar("mp_disable_respawn_times"), 1);
 		ScoutCheck();
 		//set all health to 40 (prevents overheal carryover)
 		for(new i = 1; i <= MAXPLAYERS; i++)
@@ -159,9 +157,9 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		//sorry
 		ServerCommand("sm_slay @all");
 		//disable and normalize 
-		ServerCommand("sm_smj_global_enabled 0");
-		ServerCommand("sm_smj_global_limit 1");
-		ServerCommand("mp_disable_respawn_times 0");
+		SetConVarInt(FindConVar("sm_smj_global_enabled"), 0);
+		SetConVarInt(FindConVar("sm_smj_global_limit"), 1);
+		SetConVarInt(FindConVar("mp_disable_respawn_times"), 0);
 		for(new i = 1; i <= MAXPLAYERS; i++)
 		{
 			if (IsValidClient(i))
@@ -234,11 +232,11 @@ public OnAllPluginsLoaded()
 	CreateWeapons();
 	
 	//this plugin needs scout multijump
-	if (intEnabled == int:1) { ServerCommand("sm_smj_global_enabled 1"); }
+	if (intEnabled == int:1) { SetConVarInt(FindConVar("sm_smj_global_enabled"), 1); }
 	
 	//the scout only modes enable infinitejump
-	if (classMode == 1 && (intEnabled == int:1)) { ServerCommand("sm_smj_global_limit 0"); }
-	else { ServerCommand("sm_smj_global_limit 1"); }
+	if (classMode == 1 && (intEnabled == int:1)) { SetConVarInt(FindConVar("sm_smj_global_limit"), 0); }
+	else { SetConVarInt(FindConVar("sm_smj_global_limit"), 0); }
 } 
 
 //create weapons dependent on the situation
@@ -495,10 +493,7 @@ public GiveArray(client)
 public OnMapChange( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
 {
 	if (GetEventBool(hEvent, "full_reset") && (intEnabled == int:1))
-	{
-		ServerCommand("mp_disable_respawn_times 1");
-		ScoutCheck();
-	}
+	{ SetConVarInt(FindConVar("mp_disable_respawn_times"), 1); ScoutCheck(); }
 }
 
 public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:strEventName[], bool:bDontBroadcast )
