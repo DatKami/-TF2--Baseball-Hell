@@ -16,55 +16,44 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.1.0nw"
+#define PLUGIN_VERSION  "1.62.1.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
 
-/*
-#define LOCH_ID 9090
-#define CLEAVER_ID 9092
-#define DETON_ID 9093
-#define HUNTS_ID 9094
-#define ROCKET_ID 9095
-
- 
-static const int:BASEBALL_ID = int:9200; 
-*/
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
 
 //this is the global delay multiplier, set by baseballhell_delay_multi
-static Float:delayFloatMultiplier = Float:1.0;
+static Float:delayFloatMultiplier = 1.0;
+//this is the sandman's fire lowest rate, in seconds
+static const Float:NATURAL_DELAY = 0.25;
 
-static const ids[6] =
-{
-	9200,
-	9092,
-	9090,
-	9093,
-	9094,
-	9095
-}
+//increase this if you want to code in more weapons
+//new NUMWEAPONS = 6;
+//increase this only if necessary
+new CONCAT_LENGTH = 150;
+//increase this only if necessary
+new ANNOUNCE_LENGTH = 100;
+//number format buffer length
+new FLOAT_LENGTH = 6;
+
+//the weapon index location of these items
+new ids[ 6 ] = { 9200, 9092, 9090, 9093, 9094, 9095 }; 
 
 //in order, ball delay, cleaver multi, loch multi, deton multi, hunts multi, rocket multi,
-static const Float:floatMultiplier[6] =
-{
-	0.2500,
-	0.3000,
-	0.4167,
-	0.1250,
-	0.0834,
-	0.3125
-};
+new Float:floatMultiplier[ 6 ] = { 0.2500, 0.3000, 0.4167, 0.1250, 0.0834, 0.3125 };
 
-static String:concatString[6][200];
+//these are working strings for attributes generation
+new String:concatString[ 6 ][ 150 ];
 
-static String:stringMultiplier[6][6];
+//these are string representations on how to modify the weapon's fire rate
+static String:stringMultiplier[ 6 ][ 6 ];
 
-static workingFloat[6] =
+//there are working floats for calculating the correct weapon's fire rate
+static Float:workingFloat[ 6 ] =
 {
 	0.25,
 	0.25,
@@ -72,42 +61,10 @@ static workingFloat[6] =
 	0.25,
 	0.25,
 	0.25
-}
+};
 
-/*
-//this is the bat's base fire rate, don't change this
-static const Float:ballDelay = Float:0.25;
-//this is the modifier to affect the natural rate of these weapons, don't change these
-static const Float:cleaverFloatMultiplier = Float:0.3;
-static const Float:lochFloatMultiplier = Float:0.417;
-static const Float:detonFloatMultiplier = Float:0.125;
-static const Float:huntsFloatMultiplier = Float:0.0834;
-static const Float:rocketFloatMultiplier = Float:0.3125;
-
-//these are for concatenation, you shouldn't touch these
-new String:baseBallString[100];
-new String:cleaverString[100];
-new String:lochString[200];
-new String:detonString[200];
-new String:huntsString[200];
-new String:rocketString[200];
-
-
-new String:cleaverStringSpeedMultiplier[5];
-new String:lochStringSpeedMultiplier[5];
-new String:detonStringSpeedMultiplier[5];
-new String:huntsStringSpeedMultiplier[5];
-new String:rocketStringSpeedMultiplier[5];
-
-//these are working multipliers
-static Float:cleaverFloatSpeed = Float:0.25;
-static Float:lochFloatSpeed = Float:0.25;
-static Float:detonFloatSpeed = Float:0.25;
-static Float:huntsFloatSpeed = Float:0.25;
-static Float:rocketFloatSpeed = Float:0.25;
-*/
-
-new String:announceString[100];
+//this is a multi purpose hint pusher
+new String:announceString[ 100 ];
 
 //gamemode handlers
 new String:gameMode[100] = "SCOUT_PLAY_ALL_WEAPONS";
@@ -139,7 +96,7 @@ public Plugin:myinfo =
 {
 	name = "[TF2] Baseball Hell",
 	author = "Kami",
-	description = "A laggy projectile based game modifier that promotes baseball and other projectile spam.",
+	description = "A TF2 gameplay modifier that promotes various types of projectile spam.",
 	version = PLUGIN_VERSION,
 	url = "http://steamcommunity.com/id/BlazinH"
 };
@@ -171,48 +128,38 @@ public OnPluginStart()
 
 public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	if (!StrEqual(oldVal,newVal))
+	intEnabled = int:StringToInt(newVal);
+	
+	if (intEnabled == int:1)
 	{
-		intEnabled = int:StringToInt(newVal);
-		
-		if (intEnabled == int:1)
+		ServerCommand("mp_disable_respawn_times 1");
+		ScoutCheck();
+		//set all health to 40 (prevents overheal carryover)
+		for(new i = 1; i <= MAXPLAYERS; i++)
 		{
-			ServerCommand("mp_disable_respawn_times 1");
-			ScoutCheck();
-			//set all health to 40 (prevents overheal carryover)
-			for(new i = 1; i <= MAXPLAYERS; i++)
-			{
-				if (IsValidClient(i)) { SetEntData(i, FindDataMapOffs(i, "m_iHealth"), startingHealth, 4, true); }
-			}
+			if (IsValidClient(i)) { SetEntData(i, FindDataMapOffs(i, "m_iHealth"), startingHealth, 4, true); }
 		}
-		else
+	}
+	else
+	{
+		//sorry
+		ServerCommand("sm_slay @all");
+		//disable and normalize 
+		ServerCommand("sm_smj_global_enabled 0");
+		ServerCommand("sm_smj_global_limit 1");
+		ServerCommand("mp_disable_respawn_times 0");
+		ServerCommand("sm_resetspeed @all");
+		for(new i = 1; i <= MAXPLAYERS; i++)
 		{
-			//sorry
-			ServerCommand("sm_slay @all");
-			//disable and normalize 
-			ServerCommand("sm_smj_global_enabled 0");
-			ServerCommand("sm_smj_global_limit 1");
-			ServerCommand("mp_disable_respawn_times 0");
-			ServerCommand("sm_resetspeed @all");
-			for(new i = 1; i <= MAXPLAYERS; i++)
+			if (IsValidClient(i))
 			{
-				if (IsValidClient(i))
-				{
-					//remove the notarget flag
-					new flags = GetEntityFlags(i)&~FL_NOTARGET;
-					SetEntityFlags(i, flags);
-				}
+				//remove the notarget flag
+				new flags = GetEntityFlags(i)&~FL_NOTARGET;
+				SetEntityFlags(i, flags);
 			}
 		}
 	}
 }
-
-public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
-{	//hook pull sounds because they cause pitch errors
-	if ( pitch >= 256 ) { pitch = 255; return Plugin_Changed; }
-	if ( volume > 1.0 ) { volume = 1.0; return Plugin_Changed; }
-	return Plugin_Continue;
-}  
 
 //checks if it's safe to modify the client at this index
 stock bool:IsValidClient(client)
@@ -246,9 +193,9 @@ stock GetSpeshulAmmo(client, wepslot)
 //when the player does anything, reset their ammo (this is inefficient)
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
-	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0) && (FloatMul(Float:ballDelay, Float:delayFloatMultiplier) > ballDelay)) 
+	if ((buttons & IN_ATTACK2) && (GetSpeshulAmmo(client , TFWeaponSlot_Melee) > 0) && (FloatMul(floatMultiplier[0], delayFloatMultiplier) > NATURAL_DELAY)) 
 	{ ResetTimer(int:client); }
-	else if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1) && (FloatMul(Float:ballDelay, Float:delayFloatMultiplier) <= ballDelay)) 
+	else if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) < 1) && (FloatMul(floatMultiplier[0], delayFloatMultiplier) <= NATURAL_DELAY)) 
 	{ SetSpeshulAmmo(client, TFWeaponSlot_Melee, 1); }
 	if (weaponMode == 0 && (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1))
 	{ SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1); }
@@ -267,7 +214,7 @@ public ResetTimer(int:client)
 	if ((GetSpeshulAmmo(client, TFWeaponSlot_Melee) > 0) && !cooldownArray[client])
 	{
 		cooldownArray[client] = true;
-		timerArray[client] = CreateTimer(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), Timer:timerRegen, client);
+		timerArray[client] = CreateTimer(FloatMul(NATURAL_DELAY, delayFloatMultiplier), Timer:timerRegen, client);
 	}
 }
 
@@ -299,7 +246,7 @@ public CreateWeapons()
 			workingFloat[2] = FloatMul(delayFloatMultiplier, floatMultiplier[2]) ;
 			workingFloat[2] = FloatSub(workingFloat[2], floatMultiplier[2] / Float:2.0 ) ; //compensate for reload animation
 			FloatToString(workingFloat[2], stringMultiplier[2], 6);
-			StrCat(concatString[2], 200, stringMultiplier[2]);
+			StrCat(concatString[2], CONCAT_LENGTH, stringMultiplier[2]);
 
 			TF2Items_CreateWeapon( ids[2], "tf_weapon_grenadelauncher", 308, 0, 9, 10, concatString[2], -1, _, true ); 
 			
@@ -307,8 +254,8 @@ public CreateWeapons()
 			
 			//concatenate the fire delay multiplier onto the attributes of the cleaver
 			workingFloat[1] = FloatMul(delayFloatMultiplier, floatMultiplier[1]) ;
-			FloatToString(workingFloat[1], stringMultiplier[1], 6);
-			StrCat(concatString[1], 200, stringMultiplier[1]);
+			FloatToString(workingFloat[1], stringMultiplier[1], FLOAT_LENGTH);
+			StrCat(concatString[1], CONCAT_LENGTH, stringMultiplier[1]);
 			
 			TF2Items_CreateWeapon( ids[1], "tf_weapon_cleaver", 812, 1, 9, 10, concatString[1], -1, _, true ); 
 		}
@@ -324,24 +271,24 @@ public CreateWeapons()
 			if (class != int:0) //if this class isnt a scout
 			{
 				//concatenate better cap speed
-				StrCat(concatString[0], 200, " ; 68 ; 1");
+				StrCat(concatString[0], CONCAT_LENGTH, " ; 68 ; 1");
 			}
 			
 			//concatenate the health reduction
-			StrCat(concatString[0], 200, " ; 125 ; ");
-			StrCat(concatString[0], 200, healthReduc[class]);
+			StrCat(concatString[0], CONCAT_LENGTH, " ; 125 ; ");
+			StrCat(concatString[0], CONCAT_LENGTH, healthReduc[class]);
 
 			//concatenate an attribute on engineer's bat; bots can only build minisentries, if they can at all
 			if (class == int:5)
 			{
-				StrCat(concatString[0], 200, " ; 124 ; 1");
+				StrCat(concatString[0], CONCAT_LENGTH, " ; 124 ; 1");
 			}
 			//concatenate no double jumps onto a scout's bat if a scout only mode is not on
 			else if ((classMode != 1) && (class == int:0))
 			{
-				StrCat(concatString[0], 200, " ; 49 ; 1"); //no double jumps on all player modes
+				StrCat(concatString[0], CONCAT_LENGTH, " ; 49 ; 1"); //no double jumps on all player modes
 			}
-			TF2Items_CreateWeapon( (ids[0] + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, baseBallString, -1, _, true ); 
+			TF2Items_CreateWeapon( (int:ids[0] + class) , "tf_weapon_bat_wood", 44, 2, 9, 10, concatString[0], -1, _, true ); 
 		}
 	}
 	else if (weaponMode == 2)
@@ -351,12 +298,12 @@ public CreateWeapons()
 			
 		//concatenate the fire delay multiplier onto the attributes of the detonator
 		workingFloat[3] = FloatMul(delayFloatMultiplier, floatMultiplier[3]) ;
-		FloatToString(workingFloat[3], stringMultiplier[3], 6);
-		StrCat(concatString[3], 200, stringMultiplier[3]);
+		FloatToString(workingFloat[3], stringMultiplier[3], FLOAT_LENGTH);
+		StrCat(concatString[3], CONCAT_LENGTH, stringMultiplier[3]);
 			
 		//concatenate the health reduction
-		StrCat(concatString[3], 200, " ; 125 ; ");
-		StrCat(concatString[3], 200, healthReduc[0]);
+		StrCat(concatString[3], CONCAT_LENGTH, " ; 125 ; ");
+		StrCat(concatString[3], CONCAT_LENGTH, healthReduc[0]);
 			
 		TF2Items_CreateWeapon( ids[3], "tf_weapon_flaregun", 351, 1, 9, 10, concatString[3], -1, _, true );
 	}
@@ -367,17 +314,17 @@ public CreateWeapons()
 			
 		//concatenate the fire delay multiplier onto the attributes of the huntsman
 		workingFloat[4] = FloatMul(delayFloatMultiplier, floatMultiplier[4]) ;
-		FloatToString(workingFloat[4], stringMultiplier[4], 6);
-		StrCat(concatString[4], 200, stringMultiplier[4]);
+		FloatToString(workingFloat[4], stringMultiplier[4], FLOAT_LENGTH);
+		StrCat(concatString[4], CONCAT_LENGTH, stringMultiplier[4]);
 			
 		//concatenate the health reduction
-		StrCat(concatString[4], 200, " ; 125 ; ");
-		StrCat(concatString[4], 200, healthReduc[7]);
+		StrCat(concatString[4], CONCAT_LENGTH, " ; 125 ; ");
+		StrCat(concatString[4], CONCAT_LENGTH, healthReduc[7]);
 		
 		//if (class != int:0) //if this class isnt a scout
 		//{
 			//concatenate better cap speed
-		StrCat(concatString[4], 200, " ; 68 ; 1");
+		StrCat(concatString[4], CONCAT_LENGTH, " ; 68 ; 1");
 		//}
 			
 		TF2Items_CreateWeapon( ids[4], "tf_weapon_compound_bow", 56, 0, 9, 10, concatString[4], -1, _, true ); 
@@ -391,8 +338,8 @@ public CreateWeapons()
 		//concatenate the fire delay multiplier onto the attributes of the loch-n-load
 		workingFloat[5] = FloatMul(delayFloatMultiplier, floatMultiplier[5]) ;
 		workingFloat[5] = FloatSub(workingFloat[5], 0.115 ) ; //compensate for reload animation
-		FloatToString(workingFloat[5], stringMultiplier[5], 6);
-		StrCat(concatString[5], 200, stringMultiplier[5]);
+		FloatToString(workingFloat[5], stringMultiplier[5], FLOAT_LENGTH);
+		StrCat(concatString[5], CONCAT_LENGTH, stringMultiplier[5]);
 
 		TF2Items_CreateWeapon( ids[5], "tf_weapon_rocketlauncher", 18, 0, 9, 10, concatString[5], -1, _, true ); 
 	}
@@ -406,21 +353,21 @@ public cvarSpeed(Handle:cvar, const String:oldVal[], const String:newVal[])
 	if (intEnabled == int:1)
 	{
 		announceString = "Fire rate set to ";
-		new String:damn[6];
+		new String:damn[FLOAT_LENGTH];
 		if (weaponMode != 3)
 		{
-			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 6);
-			StrCat(announceString, 100, damn);
-			StrCat(announceString, 100, " seconds");
+			FloatToString(FloatMul(NATURAL_DELAY, delayFloatMultiplier), damn, FLOAT_LENGTH);
+			StrCat(announceString, ANNOUNCE_LENGTH, damn);
+			StrCat(announceString, ANNOUNCE_LENGTH, " seconds");
 		}
 		else
 		{
-			FloatToString(ballDelay * delayFloatMultiplier * 2 / 3 , damn, 6);
-			StrCat(announceString, 100, damn);
-			StrCat(announceString, 100, " seconds at no charge, ");
-			FloatToString(FloatMul(Float:ballDelay, Float:delayFloatMultiplier), damn, 6);
-			StrCat(announceString, 100, damn);
-			StrCat(announceString, 100, " seconds at full charge");
+			FloatToString(NATURAL_DELAY * delayFloatMultiplier * 2 / 3 , damn, FLOAT_LENGTH);
+			StrCat(announceString, ANNOUNCE_LENGTH, damn);
+			StrCat(announceString, ANNOUNCE_LENGTH, " seconds at no charge, ");
+			FloatToString(NATURAL_DELAY * delayFloatMultiplier, damn, FLOAT_LENGTH);
+			StrCat(announceString, ANNOUNCE_LENGTH, damn);
+			StrCat(announceString, ANNOUNCE_LENGTH, " seconds at full charge");
 		}
 		AnnounceAll();
 		CreateWeapons(); 
@@ -449,7 +396,7 @@ public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[]
 	else if (StrEqual("HUNTSMAN", gameMode, false)){ daMode = "to Snipers with Huntsman only"; classMode = 8; weaponMode = 3; }
 	else if (StrEqual("ROCKETMAN", gameMode, false)){ daMode = "to Scouts with Valve Launchers only"; classMode = 1; weaponMode = 4; }
 	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0;}
-	StrCat(announceString, 100, daMode);
+	StrCat(announceString, ANNOUNCE_LENGTH, daMode);
 	AnnounceAll();
 	ScoutCheck();
 }
@@ -520,14 +467,14 @@ public GiveArray(client)
 		switch(TF2_GetPlayerClass(client))
 		{
 			case TFClass_Scout: TF2Items_GiveWeapon( client, ids[0] );
-			case TFClass_Soldier: TF2Items_GiveWeapon( client, ids[0] + int:1 );
-			case TFClass_Pyro: TF2Items_GiveWeapon( client, ids[0] + int:2 );
-			case TFClass_DemoMan: TF2Items_GiveWeapon( client, ids[0] + int:3 );
-			case TFClass_Heavy: TF2Items_GiveWeapon( client, ids[0] + int:4 );
-			case TFClass_Engineer: TF2Items_GiveWeapon( client, ids[0] + int:5 );
-			case TFClass_Medic: TF2Items_GiveWeapon( client, ids[0] + int:6 );
-			case TFClass_Sniper: TF2Items_GiveWeapon( client, ids[0] + int:7 );
-			case TFClass_Spy: TF2Items_GiveWeapon( client, ids[0] + int:8 );
+			case TFClass_Soldier: TF2Items_GiveWeapon( client, ids[0] + 1 );
+			case TFClass_Pyro: TF2Items_GiveWeapon( client, ids[0] + 2 );
+			case TFClass_DemoMan: TF2Items_GiveWeapon( client, ids[0] + 3 );
+			case TFClass_Heavy: TF2Items_GiveWeapon( client, ids[0] + 4 );
+			case TFClass_Engineer: TF2Items_GiveWeapon( client, ids[0] + 5 );
+			case TFClass_Medic: TF2Items_GiveWeapon( client, ids[0] + 6 );
+			case TFClass_Sniper: TF2Items_GiveWeapon( client, ids[0] + 7 );
+			case TFClass_Spy: TF2Items_GiveWeapon( client, ids[0] + 8 );
 		}
 	}
 }
@@ -564,6 +511,15 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		SetEntityFlags(iClient, flags);
 	}
 }
+
+//various other gameplay modifiers
+
+public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
+{	//hook pull sounds because they cause pitch errors
+	if ( pitch >= 256 ) { pitch = 255; return Plugin_Changed; }
+	if ( volume > 1.0 ) { volume = 1.0; return Plugin_Changed; }
+	return Plugin_Continue;
+}  
 
 //crits should always be enabled while the game modifier is active
 public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
