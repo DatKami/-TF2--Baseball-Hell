@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.1.0"
+#define PLUGIN_VERSION  "1.62.2.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -415,6 +415,7 @@ public ScoutCheck()
 		{
 			for(new i = 1; i <= MAXPLAYERS; i++)
 			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Sniper, false, true); } }
+			ServerCommand("sm_setspeed @all 400");
 		}
 		OnAllPluginsLoaded();
 		IssueNewWeapons();
