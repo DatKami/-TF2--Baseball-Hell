@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.2.0"
+#define PLUGIN_VERSION  "1.62.3.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -92,6 +92,11 @@ static const String:healthReduc[9][5] =
 	"-85"
 };
 
+//speed helpers
+new bool:speedSet[MAXPLAYERS+1] = false;
+new Float:scoutSpeed = 400.0;
+
+
 public Plugin:myinfo =
 {
 	name = "[TF2] Baseball Hell",
@@ -126,6 +131,15 @@ public OnPluginStart()
 	AddCommandListener(CommandListener_Build, "build");
 }
 
+public OnClientPutInServer(client)
+{
+    speedSet[client] = false;
+    if(client > 0 && client <= MaxClients && IsClientInGame(client))
+       {
+            SDKHook(client, SDKHook_PreThink, SDKHooks_OnPreThink);    
+       }
+}
+
 public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
 	intEnabled = int:StringToInt(newVal);
@@ -148,15 +162,11 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 		ServerCommand("sm_smj_global_enabled 0");
 		ServerCommand("sm_smj_global_limit 1");
 		ServerCommand("mp_disable_respawn_times 0");
-		ServerCommand("sm_resetspeed @all");
 		for(new i = 1; i <= MAXPLAYERS; i++)
 		{
 			if (IsValidClient(i))
-			{
-				//remove the notarget flag
-				new flags = GetEntityFlags(i)&~FL_NOTARGET;
-				SetEntityFlags(i, flags);
-			}
+			//remove sentry invuln and reset speed
+			{ new flags = GetEntityFlags(i)&~FL_NOTARGET; SetEntityFlags(i, flags); ResetSpeed(i); speedSet[i] = false; }
 		}
 	}
 }
@@ -414,8 +424,10 @@ public ScoutCheck()
 		else if (classMode == 8)
 		{
 			for(new i = 1; i <= MAXPLAYERS; i++)
-			{ if (IsValidClient(i)) { TF2_SetPlayerClass(i, TFClass_Sniper, false, true); } }
-			ServerCommand("sm_setspeed @all 400");
+			{ 
+				if (IsValidClient(i)) 
+				{ TF2_SetPlayerClass(i, TFClass_Sniper, false, true); speedSet[i] = true; } 
+			}
 		}
 		OnAllPluginsLoaded();
 		IssueNewWeapons();
@@ -495,14 +507,14 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 	if (intEnabled == int:1) //these need to be fired constantly in case of new people
 	{
 		new iClient = GetClientOfUserId( GetEventInt( hEvent, "userid" ) );
-		if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) /*|| !IsPlayerAlive(iClient)*/ )
+		if( iClient <= 0 || iClient > MaxClients || !IsClientInGame(iClient) )
 		return;
 	
 		//if scout only game mode set this person to scout
 		if (classMode == 1) { TF2_SetPlayerClass(iClient, TFClass_Scout, false, true); }
 		else if (classMode == 8) { TF2_SetPlayerClass(iClient, TFClass_Sniper, false, true); }
 		//make everyone fast like scout (this is inefficient but least console spam)
-		if (classMode != 1) { ServerCommand("sm_setspeed @all 400"); }
+		if (classMode != 1) { speedSet[iClient] = true; }
 		
 		RemoveAllWeapons(iClient);
 		GiveArray(iClient);
@@ -514,6 +526,19 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 }
 
 //various other gameplay modifiers
+
+public SDKHooks_OnPreThink(client)
+{
+    if(IsValidClient(client) && speedSet[client]) SetSpeed(client, scoutSpeed);
+}
+stock SetSpeed(client, Float:flSpeed)
+{
+    SetEntPropFloat(client, Prop_Send, "m_flMaxspeed", flSpeed);
+}
+stock ResetSpeed(client)
+{
+    TF2_StunPlayer(client, 0.0, 0.0, TF_STUNFLAG_SLOWDOWN);
+}  
 
 public Action:SHook(clients[64], &numClients, String:sample[PLATFORM_MAX_PATH], &entity, &channel, &Float:volume, &level, &pitch, &flags)
 {	//hook pull sounds because they cause pitch errors
