@@ -16,11 +16,22 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.9.0"
+#define PLUGIN_VERSION  "1.62.10.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
 #endif
+
+#define ABOUT "#about"
+#define FLAVOR "#flavor"
+#define SPEED "#speed"
+#define F1 "#f1"
+#define F2 "#f2"
+#define F3 "#f3"
+#define F4 "#f4"
+#define F5 "#f5"
+#define F6 "#f6"
+#define F7 "#f7"
 
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
@@ -141,6 +152,9 @@ public OnPluginStart()
 	
 	//watch for sentries
 	AddCommandListener(CommandListener_Build, "build");
+	
+	//hook a client menu command
+	RegConsoleCmd("bhmenu", MenuActioner);
 }
 
 public OnClientPutInServer(client)
@@ -540,6 +554,55 @@ public OnPostInventoryApplicationAndPlayerSpawn( Handle:hEvent, const String:str
 		SetEntityFlags(iClient, flags);
 	}
 }
+
+//menu stuff
+public Action:MenuActioner(client, args)
+{
+	new Handle:menu = CreateMenu(MenuHandler:MenuHandler1);
+	SetMenuTitle(menu, "Baseball Hell options");
+	AddMenuItem(menu, ABOUT, "ABOUT: What is Baseball Hell");
+	AddMenuItem(menu, FLAVOR, "FLAVOR: Change the type of projectiles/game mode");
+	AddMenuItem(menu, SPEED, "SPEED: Change the frequency of attacks");
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public FlavorActioner(client)
+{
+	new Handle:menu = CreateMenu(MenuHandler:MenuHandler1);
+	SetMenuTitle(menu, "Create a vote for new projectiles?");
+	AddMenuItem(menu, F1, "Scouts only, Sandman, Cleaver, Loch-n-Load, infinite jump");
+	AddMenuItem(menu, F2, "Scouts with Sandman only, infinite jump");
+	AddMenuItem(menu, F3, "All classes, Sandman, Cleaver, Loch-n-Load");
+	AddMenuItem(menu, F4, "All classes, Sandman only");
+	AddMenuItem(menu, F5, "Scouts with Detonator only, infinite jump");
+	AddMenuItem(menu, F6, "Snipers with huntsman only");
+	AddMenuItem(menu, F7, "Scouts with Valve launchers only, infinite jump");
+	SetMenuExitButton(menu, false);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public Action:MenuHandler1(menu, action, param1, param2)
+{
+	switch(action)
+	{
+		case MenuAction_Select:
+		{
+			decl String:info[32];
+			GetMenuItem(Handle:menu, param2, String:info, sizeof(info));
+			if (StrEqual(info, FLAVOR)) { FlavorActioner(param1); }
+			else if (StrEqual(info, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
+			else if (StrEqual(info, F2)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_BAT_ONLY"); }
+			else if (StrEqual(info, F3)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_ALL_WEAPONS"); }
+			else if (StrEqual(info, F4)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_BAT_ONLY"); }
+			else if (StrEqual(info, F5)) { SetConVarString(FindConVar("baseballhell_mode"), "FLAK_CANNON"); }
+			else if (StrEqual(info, F6)) { SetConVarString(FindConVar("baseballhell_mode"), "HUNTSMAN"); }
+			else if (StrEqual(info, F7)) { SetConVarString(FindConVar("baseballhell_mode"), "ROCKETMAN"); }
+		}
+		case MenuAction_End: { CloseHandle(Handle:menu); }
+	}
+}
+
 
 //various other gameplay modifiers
 
