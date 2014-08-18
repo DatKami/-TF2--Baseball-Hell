@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.7.0"
+#define PLUGIN_VERSION  "1.62.8.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -424,8 +424,8 @@ public AnnounceAll()
 
 public CKT() //create kill timer
 {
-	if (killTimer != INVALID_HANDLE) DestroyKillTimer();
-	killTimer = CreateTimer(1, timerKill, _, TIMER_REPEAT);
+	if (killTimer != INVALID_HANDLE) DKT();
+	killTimer = CreateTimer(1.0, timerKill, _, TIMER_REPEAT);
 }
 
 public DKT() //destroy kill timer
