@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.6.0"
+#define PLUGIN_VERSION  "1.62.7.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -84,6 +84,9 @@ static int:intEnabled = int:0; //0 = gamemode disabled, 1 = enabled
 //sandman cooldown helpers
 static Handle:timerArray[MAXPLAYERS + 1];
 static bool:cooldownArray[MAXPLAYERS + 1];
+
+//projectile delete timer
+static Handle:killTimer = INVALID_HANDLE;
 
 static const int:startingHealth = int:40;
 
@@ -154,6 +157,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 	if (intEnabled == int:1)
 	{
 		SetConVarInt(FindConVar("mp_disable_respawn_times"), 1);
+		CKT();
 		ScoutCheck();
 		//set all health to 40 (prevents overheal carryover)
 		for(new i = 1; i <= MAXPLAYERS; i++)
@@ -165,6 +169,7 @@ public EnableThis(Handle:cvar, const String:oldVal[], const String:newVal[])
 	{
 		//sorry
 		ServerCommand("sm_slay @all");
+		DKT();
 		//disable and normalize 
 		SetConVarInt(FindConVar("sm_smj_global_enabled"), 0);
 		SetConVarInt(FindConVar("sm_smj_global_limit"), 1);
@@ -228,6 +233,23 @@ public Action:timerRegen(Handle:timer, any:data)
 	if(IsValidClient(int:data) && (GetSpeshulAmmo(int:data, TFWeaponSlot_Melee) < 1)) { SetSpeshulAmmo(int:data, TFWeaponSlot_Melee, 1); }
 	timerArray[int:data] = INVALID_HANDLE;
 }
+
+public Action:timerKill(Handle:timer, any:data)
+{
+	new entity = -1;
+	while ((entity = FindEntityByClassname(entity, "tf_projectile_stun_ball")) != INVALID_ENT_REFERENCE) 
+	{
+		if(IsValidEntity(entity) && GetEntProp(entity, Prop_Send, "m_bTouched"))
+		{ AcceptEntityInput(entity, "Kill"); }
+	}
+	entity = -1;
+	while ((entity = FindEntityByClassname(entity, "tf_projectile_cleaver")) != INVALID_ENT_REFERENCE) 
+	{
+		if(IsValidEntity(entity) && GetEntProp(entity, Prop_Send, "m_bTouched"))
+		{ AcceptEntityInput(entity, "Kill"); }
+	}
+}
+
 
 public ResetTimer(int:client)
 {
@@ -400,6 +422,19 @@ public AnnounceAll()
 	{ if (IsValidClient(i)){ PrintHintText( i, announceString); } }
 }
 
+public CKT() //create kill timer
+{
+	if (killTimer != INVALID_HANDLE) DestroyKillTimer();
+	killTimer = CreateTimer(1, timerKill, _, TIMER_REPEAT);
+}
+
+public DKT() //destroy kill timer
+{
+	if (killTimer != INVALID_HANDLE) CloseHandle(killTimer);
+	killTimer = INVALID_HANDLE;
+}
+
+
 public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
 	//set a new game mode
@@ -407,14 +442,14 @@ public GameModeChanged(Handle:cvar, const String:oldVal[], const String:newVal[]
 	announceString = "Baseball Hell mode set ";
 	new String:daMode[60];
 
-	if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to Scouts only, with all weapons"; classMode = 1; weaponMode = 0; }
-	else if (StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to Scouts with bat only"; classMode = 1; weaponMode = 1; }
-	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to All classes with all weapons"; classMode = 0; weaponMode = 0; }
-	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to All classes, with bat only"; classMode = 0; weaponMode = 1; }
-	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 1; weaponMode = 2; }
-	else if (StrEqual("HUNTSMAN", gameMode, false)){ daMode = "to Snipers with Huntsman only"; classMode = 8; weaponMode = 3; }
-	else if (StrEqual("ROCKETMAN", gameMode, false)){ daMode = "to Scouts with Valve Launchers only"; classMode = 1; weaponMode = 4; }
-	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0;}
+	if (StrEqual("SCOUT_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to Scouts only, with all weapons"; classMode = 1; weaponMode = 0; CKT();}
+	else if (StrEqual("SCOUT_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to Scouts with bat only"; classMode = 1; weaponMode = 1; CKT();}
+	else if (StrEqual("ALL_PLAY_ALL_WEAPONS", gameMode, false)){ daMode = "to All classes with all weapons"; classMode = 0; weaponMode = 0; CKT();}
+	else if (StrEqual("ALL_PLAY_BAT_ONLY", gameMode, false)){ daMode = "to All classes, with bat only"; classMode = 0; weaponMode = 1; CKT();}
+	else if (StrEqual("FLAK_CANNON", gameMode, false)){ daMode = "to Scouts with detonators only"; classMode = 1; weaponMode = 2; DKT();}
+	else if (StrEqual("HUNTSMAN", gameMode, false)){ daMode = "to Snipers with Huntsman only"; classMode = 8; weaponMode = 3; DKT();}
+	else if (StrEqual("ROCKETMAN", gameMode, false)){ daMode = "to Scouts with Valve Launchers only"; classMode = 1; weaponMode = 4; DKT();}
+	else { daMode = "invalidly, setting to all scouts only, with all weapons"; classMode = 1; weaponMode = 0; CKT();}
 	StrCat(announceString, ANNOUNCE_LENGTH, daMode); AnnounceAll();
 	ScoutCheck();
 }
