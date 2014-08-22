@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.10.0"
+#define PLUGIN_VERSION  "1.62.11.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -32,7 +32,14 @@ new TF2ItemSlot = 8;
 #define F5 "#f5"
 #define F6 "#f6"
 #define F7 "#f7"
-
+#define S1 "#s1"
+#define S2 "#s2"
+#define S3 "#s3"
+#define S4 "#s4"
+#define S5 "#s5"
+#define S6 "#s6"
+#define S7 "#s7"
+#define S8 "#s8"
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
@@ -582,6 +589,23 @@ public FlavorActioner(client)
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
+public SpeedActioner(client)
+{
+	new Handle:menu = CreateMenu(MenuHandler:MenuHandler1);
+	SetMenuTitle(menu, "Current speed is %f seconds", FloatMul(NATURAL_DELAY, delayFloatMultiplier));
+	AddMenuItem(menu, S1, "RAPID-FIRE: .25 seconds per shot");
+	AddMenuItem(menu, S2, "FASTER: .35 seconds per shot");
+	AddMenuItem(menu, S3, "FAST: .50 seconds per shot");
+	AddMenuItem(menu, S4, "MEDIUM: .75 seconds per shot");
+	AddMenuItem(menu, S5, "SLOW: 1 second per shot");
+	AddMenuItem(menu, S6, "SLOWER: 1.5 seconds per shot");
+	AddMenuItem(menu, S7, "SLOWEST: 2.0 seconds per shot");
+	AddMenuItem(menu, S8, "TEDIOUS: 2.5 seconds per shot");
+	SetMenuExitButton(menu, false);
+	SetMenuExitBackButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
 public Action:MenuHandler1(menu, action, param1, param2)
 {
 	switch(action)
@@ -591,6 +615,7 @@ public Action:MenuHandler1(menu, action, param1, param2)
 			decl String:info[32];
 			GetMenuItem(Handle:menu, param2, String:info, sizeof(info));
 			if (StrEqual(info, FLAVOR)) { FlavorActioner(param1); }
+			if (StrEqual(info, SPEED)) { SpeedActioner(param1); }
 			else if (StrEqual(info, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
 			else if (StrEqual(info, F2)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_BAT_ONLY"); }
 			else if (StrEqual(info, F3)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_ALL_WEAPONS"); }
