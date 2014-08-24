@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.15.0"
+#define PLUGIN_VERSION  "1.62.16.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -668,7 +668,17 @@ public VoteHandler(client, String:announce[], String:winHandler[])
 
 public Action:timerVote(Handle:timer, any:pack)
 {
-	new totalPeople = GetTeamClientCount(2) + GetTeamClientCount(3);
+	new controller = -1;
+	new totalPeople;
+	if ((controller = FindEntityByClassname(controller, "vote_controller")) != INVALID_ENT_REFERENCE)
+	{
+		totalPeople = GetEntProp(controller, Prop_Send, "m_nPotentialVotes");
+	}
+	else
+	{
+		PrintToServer("Idiot");
+	}
+	
 	if (yesvotes + novotes >= totalPeople / 2)
     {
 		if (yesvotes > novotes)
