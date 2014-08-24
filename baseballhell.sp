@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.12.0"
+#define PLUGIN_VERSION  "1.62.13.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -40,11 +40,6 @@ new TF2ItemSlot = 8;
 #define S6 "#s6"
 #define S7 "#s7"
 #define S8 "#s8"
-
-new yesnotes;
-new nonotes;
-
-new Handle:voteTimer = INVALID_HANDLE;
 
 #define TF2_TEAM_ALL -1
 
@@ -134,6 +129,10 @@ static const String:healthReduc[9][5] =
 new bool:speedSet[MAXPLAYERS+1] = false;
 new Float:scoutSpeed = 400.0;
 
+//vote helpers
+new yesvotes;
+new novotes;
+
 
 public Plugin:myinfo =
 {
@@ -172,7 +171,7 @@ public OnPluginStart()
 	RegConsoleCmd("bhmenu", MenuActioner);
     
     //hook the vote system
-    RegConsoleCmd("vote", vote);
+	RegConsoleCmd("vote", vote);
 }
 
 public OnClientPutInServer(client)
@@ -627,59 +626,64 @@ public Action:MenuHandler1(menu, action, param1, param2)
 			GetMenuItem(Handle:menu, param2, String:info, sizeof(info));
 			if (StrEqual(info, FLAVOR)) { FlavorActioner(param1); }
 			else if (StrEqual(info, SPEED)) { SpeedActioner(param1); }
-            else if (StrEqual(info, F1)) { VoteHandler(param1,  "Set the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump?", info); }
-			else if (StrEqual(info, F2)) { VoteHandler(param1,  "Set the flavor to Scouts with bats and infinite jump?", info); }
-			else if (StrEqual(info, F3)) { VoteHandler(param1,  "Set the flavor to All classes, with bat, cleavers, and Loch-n-Load?", info); }
-			else if (StrEqual(info, F4)) { VoteHandler(param1,  "Set the flavor to All classes with bat only?", info); }
-			else if (StrEqual(info, F5)) { VoteHandler(param1,  "Set the flavor to Scouts only with detonators and infinite jump?", info); }
-			else if (StrEqual(info, F6)) { VoteHandler(param1,  "Set the flavor to Snipers with rapid fire huntsman?", info); }
-			else if (StrEqual(info, F7)) { VoteHandler(param1,  "Set the flavor to Scouts with Valve Rocket Launchers and infinite jump?", info); }
+			else if (StrEqual(info, F1)) { VoteHandler(param1, "Set the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump?", info); }
+			else if (StrEqual(info, F2)) { VoteHandler(param1, "Set the flavor to Scouts with bats and infinite jump?", info); }
+			else if (StrEqual(info, F3)) { VoteHandler(param1, "Set the flavor to All classes, with bat, cleavers, and Loch-n-Load?", info); }
+			else if (StrEqual(info, F4)) { VoteHandler(param1, "Set the flavor to All classes with bat only?", info); }
+			else if (StrEqual(info, F5)) { VoteHandler(param1, "Set the flavor to Scouts only with detonators and infinite jump?", info); }
+			else if (StrEqual(info, F6)) { VoteHandler(param1, "Set the flavor to Snipers with rapid fire huntsman?", info); }
+			else if (StrEqual(info, F7)) { VoteHandler(param1, "Set the flavor to Scouts with Valve Rocket Launchers and infinite jump?", info); }
 		}
 		case MenuAction_End: { CloseHandle(Handle:menu); }
 	}
 }
 
-public VoteHandler(client, announce, winHandler)
+public VoteHandler(client, String:announce[], String:winHandler[])
 {
-    new Handle:bf = StartMessageAll("VoteStart", USERMSG_RELIABLE);
-    BfWriteByte(bf, TF2_TEAM_ALL);
-    BfWriteByte(bf, client);
-    BfWriteString(bf, "#TF_plaerid_noteam");
-    BfWriteString(bf, announce);
-    BfWriteBool(bf, true);
-    EndMessage();
+	new Handle:bf = StartMessageAll("VoteStart", USERMSG_RELIABLE);
+	BfWriteByte(bf, TF2_TEAM_ALL);
+	BfWriteByte(bf, client);
+	BfWriteString(bf, "#TF_plaerid_noteam");
+	BfWriteString(bf, announce);
+	BfWriteBool(bf, true);
+	EndMessage();
+	
+	new Handle:pack;
+	WritePackString(pack, winHandler);
+	
+	CreateTimer(15.0, timerVote, pack, TIMER_DATA_HNDL_CLOSE);
     
-    CreateTimer(15.0, timerVote, winHandler, TIMER_DATA_HNDL_CLOSE);
-    
-    yesvotes = 0;
-    novotes = 0;
-    
-    return Plugin_Handled;
+	yesvotes = 0;
+	novotes = 0;
 }
 
-public Action:timerVote(Handle:timer, any:data)
+public Action:timerVote(Handle:timer, any:pack)
 {
-    new totalPeople = GetTeamClientCount(2) + GetTeamClientCount(3);
-    if (yesvotes + novotes >= totalPeople / 2)
+	new totalPeople = GetTeamClientCount(2) + GetTeamClientCount(3);
+	if (yesvotes + novotes >= totalPeople / 2)
     {
-        if (yesnotes > novotes)
-        {
-            new String:announceWin[100];
-            if (StrEqual(data, F1)) { announceWin = "Setting the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump..."; }
+		if (yesvotes > novotes)
+		{
+			decl String:data[10];
+			ResetPack(pack);
+			ReadPackString(pack, data, sizeof(data));
+		
+			new String:announceWin[100];
+			if (StrEqual(data, F1)) { announceWin = "Setting the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump..."; }
 			else if (StrEqual(data, F2)) { announceWin = "Setting the flavor to Scouts with bats and infinite jump..."; }
 			else if (StrEqual(data, F3)) { announceWin = "Setting the flavor to All classes, with bat, cleavers, and Loch-n-Load..."; }
 			else if (StrEqual(data, F4)) { announceWin = "Setting the flavor to All classes with bat only..."; }
 			else if (StrEqual(data, F5)) { announceWin = "Setting the flavor to Scouts only with detonators and infinite jump..."; }
 			else if (StrEqual(data, F6)) { announceWin = "Setting the flavor to Snipers with rapid fire huntsman..."; }
 			else if (StrEqual(data, F7)) { announceWin = "Setting the flavor to Scouts with Valve Rocket Launchers and infinite jump..."; }
-        
-            new Handle:bf = StartMessageAll("VotePass");
+			
+			new Handle:bf = StartMessageAll("VotePass");
 			BfWriteByte(bf, TF2_TEAM_ALL);
 			BfWriteString(bf, "#TF_playerid_noteam");
 			BfWriteString(bf, announceWin);
 			EndMessage();
             
-            if (StrEqual(data, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
+			if (StrEqual(data, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
 			else if (StrEqual(data, F2)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_BAT_ONLY"); }
 			else if (StrEqual(data, F3)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_ALL_WEAPONS"); }
 			else if (StrEqual(data, F4)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_BAT_ONLY"); }
@@ -687,7 +691,7 @@ public Action:timerVote(Handle:timer, any:data)
 			else if (StrEqual(data, F6)) { SetConVarString(FindConVar("baseballhell_mode"), "HUNTSMAN"); }
 			else if (StrEqual(data, F7)) { SetConVarString(FindConVar("baseballhell_mode"), "ROCKETMAN"); }
         }
-        else
+		else
         {
             new Handle:bf = StartMessageAll("VoteFailed");
             BfWriteByte(bf, TF2_TEAM_ALL);
@@ -695,7 +699,7 @@ public Action:timerVote(Handle:timer, any:data)
             EndMessage();
         }
     }
-    else
+	else
     {
         new Handle:bf = StartMessageAll("VoteFailed");
         BfWriteByte(bf, TF2_TEAM_ALL);
