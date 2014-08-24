@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.13.0"
+#define PLUGIN_VERSION  "1.62.14.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -649,9 +649,8 @@ public VoteHandler(client, String:announce[], String:winHandler[])
 	EndMessage();
 	
 	new Handle:pack;
+	CreateDataTimer(15.0, timerVote, pack);
 	WritePackString(pack, winHandler);
-	
-	CreateTimer(15.0, timerVote, pack, TIMER_DATA_HNDL_CLOSE);
     
 	yesvotes = 0;
 	novotes = 0;
