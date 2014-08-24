@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.11.0"
+#define PLUGIN_VERSION  "1.62.12.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -40,6 +40,14 @@ new TF2ItemSlot = 8;
 #define S6 "#s6"
 #define S7 "#s7"
 #define S8 "#s8"
+
+new yesnotes;
+new nonotes;
+
+new Handle:voteTimer = INVALID_HANDLE;
+
+#define TF2_TEAM_ALL -1
+
 new Handle:handleEnabled = INVALID_HANDLE;
 new Handle:handleSpeed = INVALID_HANDLE;
 new Handle:handleGameMode = INVALID_HANDLE;
@@ -162,6 +170,9 @@ public OnPluginStart()
 	
 	//hook a client menu command
 	RegConsoleCmd("bhmenu", MenuActioner);
+    
+    //hook the vote system
+    RegConsoleCmd("vote", vote);
 }
 
 public OnClientPutInServer(client)
@@ -615,19 +626,109 @@ public Action:MenuHandler1(menu, action, param1, param2)
 			decl String:info[32];
 			GetMenuItem(Handle:menu, param2, String:info, sizeof(info));
 			if (StrEqual(info, FLAVOR)) { FlavorActioner(param1); }
-			if (StrEqual(info, SPEED)) { SpeedActioner(param1); }
-			else if (StrEqual(info, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
-			else if (StrEqual(info, F2)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_BAT_ONLY"); }
-			else if (StrEqual(info, F3)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_ALL_WEAPONS"); }
-			else if (StrEqual(info, F4)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_BAT_ONLY"); }
-			else if (StrEqual(info, F5)) { SetConVarString(FindConVar("baseballhell_mode"), "FLAK_CANNON"); }
-			else if (StrEqual(info, F6)) { SetConVarString(FindConVar("baseballhell_mode"), "HUNTSMAN"); }
-			else if (StrEqual(info, F7)) { SetConVarString(FindConVar("baseballhell_mode"), "ROCKETMAN"); }
+			else if (StrEqual(info, SPEED)) { SpeedActioner(param1); }
+            else if (StrEqual(info, F1)) { VoteHandler(param1,  "Set the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump?", info); }
+			else if (StrEqual(info, F2)) { VoteHandler(param1,  "Set the flavor to Scouts with bats and infinite jump?", info); }
+			else if (StrEqual(info, F3)) { VoteHandler(param1,  "Set the flavor to All classes, with bat, cleavers, and Loch-n-Load?", info); }
+			else if (StrEqual(info, F4)) { VoteHandler(param1,  "Set the flavor to All classes with bat only?", info); }
+			else if (StrEqual(info, F5)) { VoteHandler(param1,  "Set the flavor to Scouts only with detonators and infinite jump?", info); }
+			else if (StrEqual(info, F6)) { VoteHandler(param1,  "Set the flavor to Snipers with rapid fire huntsman?", info); }
+			else if (StrEqual(info, F7)) { VoteHandler(param1,  "Set the flavor to Scouts with Valve Rocket Launchers and infinite jump?", info); }
 		}
 		case MenuAction_End: { CloseHandle(Handle:menu); }
 	}
 }
 
+public VoteHandler(client, announce, winHandler)
+{
+    new Handle:bf = StartMessageAll("VoteStart", USERMSG_RELIABLE);
+    BfWriteByte(bf, TF2_TEAM_ALL);
+    BfWriteByte(bf, client);
+    BfWriteString(bf, "#TF_plaerid_noteam");
+    BfWriteString(bf, announce);
+    BfWriteBool(bf, true);
+    EndMessage();
+    
+    CreateTimer(15.0, timerVote, winHandler, TIMER_DATA_HNDL_CLOSE);
+    
+    yesvotes = 0;
+    novotes = 0;
+    
+    return Plugin_Handled;
+}
+
+public Action:timerVote(Handle:timer, any:data)
+{
+    new totalPeople = GetTeamClientCount(2) + GetTeamClientCount(3);
+    if (yesvotes + novotes >= totalPeople / 2)
+    {
+        if (yesnotes > novotes)
+        {
+            new String:announceWin[100];
+            if (StrEqual(data, F1)) { announceWin = "Setting the flavor to Scouts only, with bat, cleavers, and Loch-n-Load, with infinite jump..."; }
+			else if (StrEqual(data, F2)) { announceWin = "Setting the flavor to Scouts with bats and infinite jump..."; }
+			else if (StrEqual(data, F3)) { announceWin = "Setting the flavor to All classes, with bat, cleavers, and Loch-n-Load..."; }
+			else if (StrEqual(data, F4)) { announceWin = "Setting the flavor to All classes with bat only..."; }
+			else if (StrEqual(data, F5)) { announceWin = "Setting the flavor to Scouts only with detonators and infinite jump..."; }
+			else if (StrEqual(data, F6)) { announceWin = "Setting the flavor to Snipers with rapid fire huntsman..."; }
+			else if (StrEqual(data, F7)) { announceWin = "Setting the flavor to Scouts with Valve Rocket Launchers and infinite jump..."; }
+        
+            new Handle:bf = StartMessageAll("VotePass");
+			BfWriteByte(bf, TF2_TEAM_ALL);
+			BfWriteString(bf, "#TF_playerid_noteam");
+			BfWriteString(bf, announceWin);
+			EndMessage();
+            
+            if (StrEqual(data, F1)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_ALL_WEAPONS"); }
+			else if (StrEqual(data, F2)) { SetConVarString(FindConVar("baseballhell_mode"), "SCOUT_PLAY_BAT_ONLY"); }
+			else if (StrEqual(data, F3)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_ALL_WEAPONS"); }
+			else if (StrEqual(data, F4)) { SetConVarString(FindConVar("baseballhell_mode"), "ALL_PLAY_BAT_ONLY"); }
+			else if (StrEqual(data, F5)) { SetConVarString(FindConVar("baseballhell_mode"), "FLAK_CANNON"); }
+			else if (StrEqual(data, F6)) { SetConVarString(FindConVar("baseballhell_mode"), "HUNTSMAN"); }
+			else if (StrEqual(data, F7)) { SetConVarString(FindConVar("baseballhell_mode"), "ROCKETMAN"); }
+        }
+        else
+        {
+            new Handle:bf = StartMessageAll("VoteFailed");
+            BfWriteByte(bf, TF2_TEAM_ALL);
+            BfWriteByte(bf, 3);
+            EndMessage();
+        }
+    }
+    else
+    {
+        new Handle:bf = StartMessageAll("VoteFailed");
+        BfWriteByte(bf, TF2_TEAM_ALL);
+        BfWriteByte(bf, 4);
+        EndMessage();
+    }
+}
+
+public Action:vote(client, args)
+{
+	new String:arg[8];
+	new option = 0;
+	GetCmdArg(1,arg,8);
+	PrintToServer("Got vote %s from %i",arg,client);
+	if (strcmp(arg,"option1",true) == 0)
+	{
+		yesvotes++;
+		option = 0;
+	}
+	else if (strcmp(arg,"option2",true) == 0)
+	{
+		novotes++;
+		option = 1;
+	}
+	
+	new Handle:msg = CreateEvent("vote_cast");
+	SetEventInt(msg, "entityid", client);
+	SetEventInt(msg, "team", -1);
+	SetEventInt(msg, "vote_option", option);
+	FireEvent(msg);
+	
+	return Plugin_Continue;
+}
 
 //various other gameplay modifiers
 
