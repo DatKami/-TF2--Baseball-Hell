@@ -16,7 +16,7 @@
 
 #define PROJ_MODE 2;
 
-#define PLUGIN_VERSION  "1.62.16.0"
+#define PLUGIN_VERSION  "1.62.17.0"
 
 #if !defined _tf2itemsinfo_included
 new TF2ItemSlot = 8;
@@ -677,6 +677,7 @@ public Action:timerVote(Handle:timer, any:pack)
 	else
 	{
 		PrintToServer("Idiot");
+		return;
 	}
 	
 	if (yesvotes + novotes >= totalPeople / 2)
